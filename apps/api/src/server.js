@@ -1,0 +1,29 @@
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+const { API_PORT, CORS_ORIGIN } = require("./config");
+
+const health = require("./routes/health");
+const authRoutes = require("./routes/auth");
+const usersRoutes = require("./routes/users");
+const appsRoutes = require("./routes/apps");
+
+const app = express();
+
+app.use(cors({
+    origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN,
+    credentials: true
+}));
+
+app.use(cookieParser());
+app.use(express.json({ limit: "2mb" }));
+
+app.use("/api/health", health);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/apps", appsRoutes);
+
+app.listen(API_PORT, () => {
+    console.log(`✅ API listening on :${API_PORT}`);
+});
