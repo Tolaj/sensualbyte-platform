@@ -2,9 +2,13 @@ version: "3.9"
 
 services:
   api:
-    build: ../apps/api
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
     env_file:
       - ../.env
+    expose:
+      - "3001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../runtime:/app/runtime
@@ -12,6 +16,8 @@ services:
     restart: unless-stopped
     networks:
       - sensual_net
+
+
 
   nginx:
     image: nginx:alpine
@@ -23,12 +29,12 @@ services:
       - ./nginx/gateway.conf:/etc/nginx/nginx.conf:ro
       
       # ✅ generated includes
-      - ./nginx/sensual-apps.conf:/etc/nginx/conf.d/sensual-apps.conf:ro
-      - ./nginx/sensual-apps-servers.conf:/etc/nginx/conf.d/sensual-apps-servers.conf:ro
+      - ./nginx/sensualbyte-apps.conf:/etc/nginx/conf.d/sensualbyte-apps.conf:ro
+      - ./nginx/sensualbyte-apps-servers.conf:/etc/nginx/conf.d/sensualbyte-apps-servers.conf:ro
 
       # ✅ CRA build output
       - ../apps/dashboard/frontend/build:/usr/share/nginx/html:ro
-      
+
     restart: unless-stopped
     networks:
       - sensual_net

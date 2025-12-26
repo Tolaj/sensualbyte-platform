@@ -2,7 +2,7 @@ const router = require("express").Router();
 const { nanoid } = require("nanoid");
 
 const { requireAuth } = require("../middleware/authMiddleware");
-const { createTeam, getTeam } = require("../teams");
+const { createTeam, getTeam } = require("../lib/teams");
 
 router.post("/", requireAuth(["super_admin", "admin"]), (req, res) => {
     const name = (req.body?.name || "").trim();

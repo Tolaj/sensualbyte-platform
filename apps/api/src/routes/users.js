@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { connectDB } = require("../db");
-const { hashPassword } = require("../auth");
+const { hashPassword } = require("../lib/auth");
 const { requireAuth } = require("../middleware/authMiddleware");
 
 router.get("/", requireAuth(["super_admin"]), async (req, res) => {

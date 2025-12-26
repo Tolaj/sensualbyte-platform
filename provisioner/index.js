@@ -1,23 +1,15 @@
-const {
-    ensureNetwork,
-    createContainer,
-    setupSSH,
-    getContainerIP,
-    stopContainer,
-    startContainer,
-    removeContainer,
-} = require("./container");
+const docker = require("./core/docker");
 
 module.exports = {
-    ensureNetwork,
-    createContainer,
-    setupSSH,
-    getContainerIP,
-    stopContainer,
-    startContainer,
-    removeContainer,
-    getLogs: require("./logs").getLogs,
-    checkHealth: require("./health").checkHealth,
-    createEnvironment: require("./environments").createEnvironment
+    core: docker,
 
+    services: {
+        create: require("./services/create").createService,
+        health: require("./services/health").checkHealth,
+        logs: require("./services/logs").getLogs
+    },
+
+    computes: {
+        create: require("./computes/create").createCompute
+    }
 };

@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("./config");
+const { JWT_SECRET } = require("../config");
 
 async function hashPassword(password) {
     const salt = await bcrypt.genSalt(10);

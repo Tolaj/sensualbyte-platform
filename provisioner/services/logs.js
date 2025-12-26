@@ -1,4 +1,4 @@
-const { execCmd } = require("./container");
+const { execCmd } = require("../core/docker");
 
 async function getLogs(containerName, tail = 200) {
     const out = await execCmd("docker", [

@@ -2,8 +2,8 @@ const router = require("express").Router();
 const { nanoid } = require("nanoid");
 
 const { requireAuth } = require("../middleware/authMiddleware");
-const { createProject, getProject, listProjectsByTeam } = require("../projects");
-const { isTeamMember } = require("../teams");
+const { createProject, getProject, listProjectsByTeam } = require("../lib/projects");
+const { isTeamMember } = require("../lib/teams");
 
 /**
  * CREATE PROJECT

@@ -1,15 +1,16 @@
 const fs = require("fs");
 const path = require("path");
+const { readJson, writeJson } = require("./store");
 
 const STORE = path.join(process.cwd(), "runtime", "ownership.json");
 
+
 function readStore() {
-    if (!fs.existsSync(STORE)) return { ownerships: [] };
-    return JSON.parse(fs.readFileSync(STORE, "utf-8"));
+    return readJson(STORE, { ownership: [] });
 }
 
 function writeStore(data) {
-    fs.writeFileSync(STORE, JSON.stringify(data, null, 2));
+    writeJson(STORE, data);
 }
 
 function addOwnership({ resourceType, resourceId, ownerUserId, role }) {

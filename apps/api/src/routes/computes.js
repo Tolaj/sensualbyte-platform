@@ -1,34 +1,34 @@
 const router = require("express").Router();
-const fs = require("fs");
 const path = require("path");
 const { nanoid } = require("nanoid");
-const { addOwnership, isOwnerOrAdmin } = require("../ownership");
 
+const { addOwnership, isOwnerOrAdmin } = require("../lib/ownership");
+const { readJson, writeJson } = require("../lib/store");
 const { requireAuth } = require("../middleware/authMiddleware");
 const config = require("../config");
+
 const provisioner = require("../../../provisioner");
 
-const STORE = path.join(process.cwd(), "runtime", "environments.json");
+const STORE = path.join(process.cwd(), "runtime", "computes.json");
 
 function readStore() {
-    if (!fs.existsSync(STORE)) return { environments: [] };
-    return JSON.parse(fs.readFileSync(STORE, "utf-8"));
+    return readJson(STORE, { computes: [] });
 }
 
 function writeStore(data) {
-    fs.writeFileSync(STORE, JSON.stringify(data, null, 2));
+    writeJson(STORE, data);
 }
 
 /**
- * LIST ENVIRONMENTS
+ * LIST COMPUTES
  */
 router.get("/", requireAuth(["super_admin", "admin"]), (req, res) => {
     const data = readStore();
-    res.json(data.environments);
+    res.json(data.computes);
 });
 
 /**
- * CREATE ENVIRONMENT
+ * CREATE COMPUTE
  */
 router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const body = req.body || {};
@@ -37,33 +37,38 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const memoryMb = Number(body.memoryMb || 512);
     const image = body.image || "ubuntu:22.04";
     const username = body.username || config.SSH_USER;
+    const projectId = body.projectId;
+
+    if (!projectId) {
+        return res.status(400).json({ error: "projectId required" });
+    }
 
     if (memoryMb < 256) {
         return res.status(400).json({ error: "memoryMb must be >= 256" });
     }
 
-    const id = `env_${nanoid(10)}`;
+    const computeId = `cmp_${nanoid(10)}`;
 
-    await provisioner.ensureNetwork(config.DOCKER_NETWORK);
-    const containerName = await provisioner.createEnvironment(
-        id,
+    await provisioner.core.ensureNetwork(config.DOCKER_NETWORK);
+
+    const containerName = await provisioner.computes.create({
+        computeId,
         cpu,
         memoryMb,
-        config.DOCKER_NETWORK,
+        network: config.DOCKER_NETWORK,
         image,
         username
-    );
+    });
 
-    const ip = await provisioner.getContainerIP(containerName, config.DOCKER_NETWORK);
+    const ip = await provisioner.core.getContainerIP(
+        containerName,
+        config.DOCKER_NETWORK
+    );
 
     const data = readStore();
 
-    const projectId = body.projectId;
-    if (!projectId) return res.status(400).json({ error: "projectId required" });
-
-
-    const env = {
-        id,
+    const compute = {
+        id: computeId,
         projectId,
         containerName,
         cpu,
@@ -72,39 +77,38 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
         ip,
         username,
         status: "running",
-        ownerUserId: req.user.id,
         createdAt: new Date().toISOString()
     };
 
-    data.environments.push(env);
+    data.computes.push(compute);
     writeStore(data);
+
     addOwnership({
-        resourceType: "environment",
-        resourceId: id,
+        resourceType: "compute",
+        resourceId: computeId,
         ownerUserId: req.user.id,
         role: "owner"
     });
 
-    res.json(env);
+    res.json(compute);
 });
 
 /**
- * DELETE ENVIRONMENT
+ * DELETE COMPUTE
  */
-router.delete("/:id", requireAuth(["super_admin"]), async (req, res) => {
+router.delete("/:id", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const data = readStore();
-    const idx = data.environments.findIndex(e => e.id === req.params.id);
+    const idx = data.computes.findIndex(c => c.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: "Not found" });
 
-    const env = data.environments[idx];
-
-    if (!isOwnerOrAdmin(req.user, "environment", req.params.id)) {
+    if (!isOwnerOrAdmin(req.user, "compute", req.params.id)) {
         return res.status(403).json({ error: "Forbidden" });
     }
 
-    await provisioner.removeContainer(env.containerName);
+    const compute = data.computes[idx];
+    await provisioner.core.removeContainer(compute.containerName);
 
-    data.environments.splice(idx, 1);
+    data.computes.splice(idx, 1);
     writeStore(data);
 
     res.json({ ok: true });

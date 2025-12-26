@@ -1,10 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "🔄 Rendering nginx routes..."
-node scripts/render-nginx-apps.js
+cd "$(dirname "$0")/.."
 
-echo "🔄 Reloading nginx container..."
-docker exec -i nginx nginx -s reload
+echo "🔄 Rendering nginx routes..."
+node scripts/render-nginx-routes.js
+
+echo "🔄 Reloading nginx (compose service)..."
+docker compose -f infra/docker-compose.yml exec -T nginx nginx -s reload
 
 echo "✅ Nginx reloaded."

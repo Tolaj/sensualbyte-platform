@@ -1,4 +1,4 @@
-const { verifyToken } = require("../auth");
+const { verifyToken } = require("../lib/auth");
 
 function requireAuth(allowedRoles = []) {
     return async (req, res, next) => {

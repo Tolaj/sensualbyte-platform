@@ -7,8 +7,7 @@ const { API_PORT, CORS_ORIGIN } = require("./config");
 const health = require("./routes/health");
 const authRoutes = require("./routes/auth");
 const usersRoutes = require("./routes/users");
-const appsRoutes = require("./routes/apps");
-const envRoutes = require("./routes/environments");
+
 const teamRoutes = require("./routes/teams");
 const projectRoutes = require("./routes/projects");
 
@@ -26,8 +25,10 @@ app.use(express.json({ limit: "2mb" }));
 app.use("/api/health", health);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
-app.use("/api/apps", appsRoutes);
-app.use("/api/environments", envRoutes);
+
+app.use("/api/services", require("./routes/services"));
+app.use("/api/computes", require("./routes/computes"));
+
 app.use("/api/teams", teamRoutes);
 app.use("/api/projects", projectRoutes);
 

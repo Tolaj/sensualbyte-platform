@@ -1,4 +1,4 @@
-const { execCmd } = require("./container");
+const { execCmd } = require("./docker");
 const { ensureKeypair } = require("./keys");
 
 async function setupSSH(containerName, username) {

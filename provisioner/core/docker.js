@@ -20,36 +20,6 @@ async function ensureNetwork(networkName) {
     }
 }
 
-async function createContainer(appId, cpu, memoryMb, networkName, image) {
-    const name = `app_${appId}`;
-
-    await execCmd("docker", [
-        "run",
-        "-d",
-        "--name",
-        name,
-        "--network",
-        networkName,
-        "--cpus",
-        String(cpu),
-        "--memory",
-        `${memoryMb}m`,
-
-        // ===== Platform ownership =====
-        "--label", "sensual.managed=true",
-        "--label", `sensual.appId=${appId}`,
-
-        // ===== Health metadata (THIS IS WHAT YOU ASKED) =====
-        "--label", "sensual.health.path=/health",
-        "--label", "sensual.health.port=3000",
-
-        // ===== Runtime =====
-        "-p", "3000",              // internal only, no host exposure
-        image
-    ]);
-
-    return name;
-}
 
 
 
@@ -77,13 +47,10 @@ async function removeContainer(containerName) {
     await execCmd("docker", ["rm", "-f", containerName]);
 }
 
-const { setupSSH } = require("./ssh");
 
 module.exports = {
     execCmd,
     ensureNetwork,
-    createContainer,
-    setupSSH,
     getContainerIP,
     stopContainer,
     startContainer,

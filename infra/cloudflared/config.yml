@@ -6,9 +6,10 @@ ingress:
     service: http://localhost:8080
   - hostname: ecs.sensualbyte.com
     service: http://localhost:8080
-  - hostname: ssh.sensualbyte.com
-    service: tcp://localhost:22
-  # - hostname: "*.ecs.sensualbyte.com"
-  #   service: http://localhost:8080
+  - hostname: "*.ecs.sensualbyte.com"
+    service: http://localhost:8080
+  # - hostname: ssh.sensualbyte.com
+  #   service: tcp://localhost:22
+ 
 
   - service: http_status:404

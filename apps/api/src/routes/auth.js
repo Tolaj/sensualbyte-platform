@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { connectDB } = require("../db");
-const { verifyPassword, generateToken } = require("../auth");
+const { verifyPassword, generateToken } = require("../lib/auth");
 
 router.post("/login", async (req, res) => {
     const { email, password } = req.body || {};
