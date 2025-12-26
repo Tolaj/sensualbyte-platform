@@ -57,8 +57,14 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const ip = await provisioner.getContainerIP(containerName, config.DOCKER_NETWORK);
 
     const data = readStore();
+
+    const projectId = body.projectId;
+    if (!projectId) return res.status(400).json({ error: "projectId required" });
+
+
     const env = {
         id,
+        projectId,
         containerName,
         cpu,
         memoryMb,

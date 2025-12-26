@@ -10,8 +10,8 @@ const usersRoutes = require("./routes/users");
 const appsRoutes = require("./routes/apps");
 const envRoutes = require("./routes/environments");
 const teamRoutes = require("./routes/teams");
+const projectRoutes = require("./routes/projects");
 
-app.use("/api/environments", envRoutes);
 
 const app = express();
 
@@ -29,6 +29,7 @@ app.use("/api/users", usersRoutes);
 app.use("/api/apps", appsRoutes);
 app.use("/api/environments", envRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/projects", projectRoutes);
 
 app.listen(API_PORT, () => {
     console.log(`✅ API listening on :${API_PORT}`);

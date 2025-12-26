@@ -66,9 +66,13 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     // Health defaults (from labels we added in provisioner)
     const healthPath = "/health";
 
+    const projectId = body.projectId;
+    if (!projectId) return res.status(400).json({ error: "projectId required" });
+
     const data = readStore();
     const app = {
         id,
+        projectId,
         name,
         image,
         runtime: "node",
