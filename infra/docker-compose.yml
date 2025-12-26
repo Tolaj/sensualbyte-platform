@@ -15,7 +15,7 @@ services:
       - ../ssh-keys:/app/ssh-keys
     restart: unless-stopped
     networks:
-      - sensual_net
+      - sensualbyte_net
 
 
 
@@ -37,7 +37,7 @@ services:
 
     restart: unless-stopped
     networks:
-      - sensual_net
+      - sensualbyte_net
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -49,5 +49,5 @@ services:
     restart: unless-stopped
 
 networks:
-  sensual_net:
-    name: sensual_net
+  sensualbyte_net:
+    name: sensualbyte_net

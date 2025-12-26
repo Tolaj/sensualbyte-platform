@@ -14,12 +14,12 @@ module.exports = {
     CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
 
     MONGO_URI: must("MONGO_URI", "mongodb://localhost:27017"),
-    MONGO_DB: must("MONGO_DB", "sensual_platform"),
+    MONGO_DB: must("MONGO_DB", "sensualbyte_platform"),
 
     SSH_USER: process.env.SSH_USER || "swapnil",
     DEFAULT_CPU: Number(process.env.DEFAULT_CPU || 1),
     DEFAULT_MEMORY_MB: Number(process.env.DEFAULT_MEMORY_MB || 512),
-    DOCKER_NETWORK: process.env.DOCKER_NETWORK || "sensual_net",
+    DOCKER_NETWORK: process.env.DOCKER_NETWORK || "sensualbyte_net",
 
     BASE_DOMAIN: process.env.BASE_DOMAIN || "localhost"
 };
