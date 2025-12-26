@@ -18,3 +18,11 @@ echo "   docker compose -f infra/docker-compose.yml up -d nginx cloudflared"
 echo ""
 echo "Tip:"
 echo " - If your API needs docker provisioning, it must access /var/run/docker.sock (compose does this)."
+
+
+# my commands!
+
+# cloudflared tunnel --config ./config.yml run sensual-tunnel
+
+# docker restart nginx-gateway
+# docker exec -it nginx-gateway sh

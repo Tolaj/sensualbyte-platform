@@ -3,8 +3,8 @@ const path = require("path");
 
 const STORE = path.join(__dirname, "..", "runtime", "services.json");
 
-const OUT_PATH = path.join(__dirname, "..", "infra", "nginx", "sensual-apps.conf");
-const OUT_SERVERS = path.join(__dirname, "..", "infra", "nginx", "sensual-apps-servers.conf");
+const OUT_PATH = path.join(__dirname, "..", "infra", "nginx", "sensualbyte-apps.conf");
+const OUT_SERVERS = path.join(__dirname, "..", "infra", "nginx", "sensualbyte-apps-servers.conf");
 
 // e.g. svc_xxx.ecs.sensualbyte.com
 const SUBDOMAIN_SUFFIX = "ecs.sensualbyte.com";

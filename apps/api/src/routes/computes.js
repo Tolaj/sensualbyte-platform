@@ -7,7 +7,13 @@ const { readJson, writeJson } = require("../lib/store");
 const { requireAuth } = require("../middleware/authMiddleware");
 const config = require("../config");
 
-const provisioner = require("../../../provisioner");
+let provisioner;
+
+try {
+    provisioner = require("../../provisioner");
+} catch (err) {
+    provisioner = require("../../../../provisioner");
+}
 
 const STORE = path.join(process.cwd(), "runtime", "computes.json");
 
