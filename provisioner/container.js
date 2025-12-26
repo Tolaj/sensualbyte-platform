@@ -20,7 +20,7 @@ async function ensureNetwork(networkName) {
     }
 }
 
-async function createContainer(appId, cpu, memoryMb, networkName, image = "ubuntu:22.04") {
+async function createContainer(appId, cpu, memoryMb, networkName, image) {
     const name = `app_${appId}`;
 
     await execCmd("docker", [
@@ -34,17 +34,24 @@ async function createContainer(appId, cpu, memoryMb, networkName, image = "ubunt
         String(cpu),
         "--memory",
         `${memoryMb}m`,
-        "--label",
-        `sensual.managed=true`,
-        "--label",
-        `sensual.appId=${appId}`,
-        image,
-        "sleep",
-        "infinity",
+
+        // ===== Platform ownership =====
+        "--label", "sensual.managed=true",
+        "--label", `sensual.appId=${appId}`,
+
+        // ===== Health metadata (THIS IS WHAT YOU ASKED) =====
+        "--label", "sensual.health.path=/health",
+        "--label", "sensual.health.port=3000",
+
+        // ===== Runtime =====
+        "-p", "3000",              // internal only, no host exposure
+        image
     ]);
 
     return name;
 }
+
+
 
 async function getContainerIP(containerName, networkName) {
     // Safer: docker inspect by network

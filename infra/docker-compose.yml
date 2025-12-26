@@ -21,8 +21,14 @@ services:
       - "8080:80"
     volumes:
       - ./nginx/gateway.conf:/etc/nginx/nginx.conf:ro
+      
+      # ✅ generated includes
+      - ./nginx/sensual-apps.conf:/etc/nginx/conf.d/sensual-apps.conf:ro
+      - ./nginx/sensual-apps-servers.conf:/etc/nginx/conf.d/sensual-apps-servers.conf:ro
+
       # ✅ CRA build output
       - ../apps/dashboard/frontend/build:/usr/share/nginx/html:ro
+      
     restart: unless-stopped
     networks:
       - sensual_net

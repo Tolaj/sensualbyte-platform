@@ -16,4 +16,8 @@ module.exports = {
     stopContainer,
     startContainer,
     removeContainer,
+    getLogs: require("./logs").getLogs,
+    checkHealth: require("./health").checkHealth,
+    createEnvironment: require("./environments").createEnvironment
+
 };
