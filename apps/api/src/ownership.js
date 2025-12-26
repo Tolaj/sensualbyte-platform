@@ -33,12 +33,35 @@ function getOwners(resourceType, resourceId) {
     );
 }
 
+const { getTeamRole } = require("./teams");
+
 function isOwnerOrAdmin(user, resourceType, resourceId) {
     if (user.role === "super_admin") return true;
 
-    const owners = getOwners(resourceType, resourceId);
-    return owners.some(o => o.ownerUserId === user.id);
+    const data = readStore();
+
+    const records = data.ownerships.filter(
+        o => o.resourceType === resourceType && o.resourceId === resourceId
+    );
+
+    for (const o of records) {
+        // Direct user ownership
+        if (o.ownerType === "user" && o.ownerId === user.id) {
+            return true;
+        }
+
+        // Team ownership
+        if (o.ownerType === "team") {
+            const role = getTeamRole(user.id, o.ownerId);
+            if (role === "owner" || role === "admin") {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
+
 
 module.exports = {
     addOwnership,
