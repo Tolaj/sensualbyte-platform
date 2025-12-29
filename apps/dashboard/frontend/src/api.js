@@ -6,7 +6,7 @@ export function getToken() {
 export async function apiFetch(path, options = {}) {
     const token = getToken();
 
-    const res = await fetch(`${REACT_APP_API_BASE}${path}`, {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}${path}`, {
         ...options,
         headers: {
             "Content-Type": "application/json",
@@ -44,7 +44,7 @@ export function getRole() {
 
 export async function api(path, options = {}) {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${REACT_APP_API_BASE}${path}`, {
+    const res = await fetch(`${process.env.REACT_APP_API_BASE}${path}`, {
         ...options,
         headers: {
             "Content-Type": "application/json",

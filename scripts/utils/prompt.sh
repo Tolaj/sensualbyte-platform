@@ -1,7 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
-# expects flags.sh to be sourced before this
+# Safe defaults if flags not loaded
+is_yes() { return 1; }
+is_defaults() { return 1; }
+
+# Override if flags.sh was sourced
+type is_yes >/dev/null 2>&1 || true
+type is_defaults >/dev/null 2>&1 || true
+
 prompt() {
   local msg="$1"
   local def="${2:-}"
