@@ -22,6 +22,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: "2mb" }));
 
+
 app.use("/api/health", health);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);

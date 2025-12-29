@@ -10,40 +10,56 @@ source scripts/utils/require.sh
 require_file .cf_tunnel_id
 require_file .env
 
-# Load env
 # shellcheck disable=SC1091
 source .env
 
 TUNNEL_ID="$(cat .cf_tunnel_id)"
+
 CONFIG_DIR="infra/cloudflared"
-CONFIG_FILE="$CONFIG_DIR/config.yml"
-CREDS_PATH="/home/${USER}/.cloudflared/${TUNNEL_ID}.json"
+CONFIG_FILE="${CONFIG_DIR}/config.yml"
 
-log_info "Rendering Cloudflare config.yml"
+# Path MUST be inside the cloudflared container (matches your compose volume)
+CREDS_PATH="/home/nonroot/.cloudflared/${TUNNEL_ID}.json"
 
-mkdir -p "$CONFIG_DIR"
+require_file "$CONFIG_FILE"
 
-cat > "$CONFIG_FILE" <<EOF
-tunnel: ${CF_TUNNEL_NAME:-sensual-tunnel}
+log_info "Updating only credentials-file in ${CONFIG_FILE}"
+log_info "New credentials-file: ${CREDS_PATH}"
+
+# Use portable sed in-place (works on GNU sed and BSD sed)
+sed_in_place() {
+  local expr="$1"
+  local file="$2"
+  if sed --version >/dev/null 2>&1; then
+    # GNU sed (Linux)
+    sed -i "$expr" "$file"
+  else
+    # BSD sed (macOS)
+    sed -i '' "$expr" "$file"
+  fi
+}
+
+# 1) If credentials-file exists, replace it (even if indented)
+if grep -Eq '^[[:space:]]*credentials-file:' "$CONFIG_FILE"; then
+  sed_in_place "s|^[[:space:]]*credentials-file:.*|credentials-file: ${CREDS_PATH}|" "$CONFIG_FILE"
+  log_ok "Replaced existing credentials-file"
+else
+  # 2) If tunnel exists, insert right after it (preserves YAML structure)
+  if grep -Eq '^[[:space:]]*tunnel:' "$CONFIG_FILE"; then
+    sed_in_place "/^[[:space:]]*tunnel:/a\\
 credentials-file: ${CREDS_PATH}
+" "$CONFIG_FILE"
+    log_ok "Inserted credentials-file after tunnel"
+  else
+    # 3) If neither exists, prepend at top (safe fallback)
+    tmp="$(mktemp)"
+    {
+      echo "credentials-file: ${CREDS_PATH}"
+      cat "$CONFIG_FILE"
+    } > "$tmp"
+    mv "$tmp" "$CONFIG_FILE"
+    log_ok "Prepended credentials-file at top (no tunnel key found)"
+  fi
+fi
 
-ingress:
-  - hostname: nginx.${BASE_DOMAIN}
-    service: http://localhost:8080
-
-  - hostname: ecs.${BASE_DOMAIN}
-    service: http://localhost:8080
-
-  - hostname: "*.ecs.${BASE_DOMAIN}"
-    service: http://localhost:8080
-
-  # Uncomment if you want SSH over Cloudflare later
-  # - hostname: ssh.${BASE_DOMAIN}
-  #   service: tcp://localhost:22
-
-  - service: http_status:404
-EOF
-
-log_ok "Cloudflare config written:"
-log_info "  $CONFIG_FILE"
-log_info "  credentials-file: $CREDS_PATH"
+log_ok "Cloudflare config updated successfully"

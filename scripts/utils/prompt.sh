@@ -1,19 +1,11 @@
 #!/bin/bash
 set -euo pipefail
 
-# Safe defaults if flags not loaded
-is_yes() { return 1; }
-is_defaults() { return 1; }
-
-# Override if flags.sh was sourced
-type is_yes >/dev/null 2>&1 || true
-type is_defaults >/dev/null 2>&1 || true
-
 prompt() {
   local msg="$1"
   local def="${2:-}"
 
-  if is_defaults; then
+  if [ "${DEFAULTS_MODE:-false}" = "true" ]; then
     echo "$def"
     return
   fi
@@ -31,7 +23,7 @@ prompt() {
 confirm() {
   local msg="$1"
 
-  if is_yes; then
+  if [ "${YES_MODE:-false}" = "true" ]; then
     echo "✔ $msg (auto-yes)"
     return 0
   fi

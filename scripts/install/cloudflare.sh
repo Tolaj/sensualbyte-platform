@@ -32,3 +32,25 @@ TUNNEL_ID="$(cloudflared tunnel list | awk -v n="$TUNNEL_NAME" '$2==n {print $1}
 
 echo "$TUNNEL_ID" > .cf_tunnel_id
 log_ok "Tunnel ready: $TUNNEL_ID"
+
+# Main hostname
+HOSTNAME="ecs.sensualbyte.com"
+if cloudflared tunnel route dns list | grep -qw "$HOSTNAME"; then
+    log_warn "DNS route already exists for $HOSTNAME, skipping..."
+else
+    log_info "Routing DNS: $HOSTNAME -> $TUNNEL_NAME"
+    cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$HOSTNAME"
+    log_ok "DNS routing complete for $HOSTNAME"
+fi
+
+# Wildcard hostname
+WILDCARD_HOST="*.ecs.sensualbyte.com"
+if cloudflared tunnel route dns list | grep -qw "$WILDCARD_HOST"; then
+    log_warn "DNS route already exists for $WILDCARD_HOST, skipping..."
+else
+    log_info "Routing wildcard DNS: $WILDCARD_HOST -> $TUNNEL_NAME"
+    cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$WILDCARD_HOST"
+    log_ok "DNS routing complete for $WILDCARD_HOST"
+fi
+
+log_ok "DNS routing complete."

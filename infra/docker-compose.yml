@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   api:
+    container_name: sensualbyte-api
     build:
       context: ../apps/api
       dockerfile: Dockerfile
@@ -19,6 +20,7 @@ services:
       - sensualbyte_net
 
   dashboard:
+    container_name: sensualbyte-dashboard
     build:
       context: ../apps/dashboard/frontend
       dockerfile: Dockerfile
@@ -35,6 +37,7 @@ services:
 
   mongo:
     image: mongo:7
+    container_name: sensualbyte-mongo
     # container_name: sensual-mongo
     restart: unless-stopped
     ports:
@@ -47,6 +50,7 @@ services:
 
   nginx:
     image: nginx:alpine
+    container_name: sensualbyte-nginx
     depends_on:
       - api
     ports:
@@ -67,6 +71,7 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
+    container_name: sensualbyte-cloudflared
     network_mode: host
     volumes:
       - /home/swapnil/.cloudflared:/home/nonroot/.cloudflared
