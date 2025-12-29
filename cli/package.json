@@ -1,0 +1,12 @@
+{
+    "name": "sensualbyte-cli",
+    "version": "0.1.0",
+    "description": "SENSUALBYTE SERVER CLI",
+    "bin": {
+        "sensualbyte": "./index.js"
+    },
+    "type": "commonjs",
+    "dependencies": {
+        "commander": "^11.0.0"
+    }
+}
