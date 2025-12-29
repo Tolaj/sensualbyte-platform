@@ -13,7 +13,7 @@ module.exports = {
     JWT_SECRET: must("JWT_SECRET", "change_me"),
     CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
 
-    MONGO_URI: must("MONGO_URI", "mongodb://localhost:27017"),
+    MONGO_URI: must("MONGO_URI", "mongodb://mongo:27017"),
     MONGO_DB: must("MONGO_DB", "sensualbyte_platform"),
 
     SSH_USER: process.env.SSH_USER || "swapnil",

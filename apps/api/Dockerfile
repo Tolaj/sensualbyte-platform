@@ -2,15 +2,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY apps/api/package.json apps/api/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm install --omit=dev
 
-COPY apps/api/src ./src
+COPY src ./src
 
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--enable-source-maps"
-
-EXPOSE 3001
 
 RUN addgroup -S app && adduser -S app -G app
 USER app

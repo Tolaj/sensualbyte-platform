@@ -32,6 +32,6 @@ app.use("/api/computes", require("./routes/computes"));
 app.use("/api/teams", teamRoutes);
 app.use("/api/projects", projectRoutes);
 
-app.listen(API_PORT, () => {
+app.listen(API_PORT, '0.0.0.0', () => {
     console.log(`✅ API listening on :${API_PORT}`);
 });
