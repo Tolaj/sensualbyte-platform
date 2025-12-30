@@ -43,6 +43,16 @@ else
     log_ok "DNS routing complete for $HOSTNAME"
 fi
 
+# ssh hostname
+HOSTNAME="ssh.sensualbyte.com"
+if cloudflared tunnel route dns list | grep -qw "$HOSTNAME"; then
+    log_warn "DNS route already exists for $HOSTNAME, skipping..."
+else
+    log_info "Routing DNS: $HOSTNAME -> $TUNNEL_NAME"
+    cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$HOSTNAME"
+    log_ok "DNS routing complete for $HOSTNAME"
+fi
+
 # Wildcard hostname
 WILDCARD_HOST="*.ecs.sensualbyte.com"
 if cloudflared tunnel route dns list | grep -qw "$WILDCARD_HOST"; then
@@ -52,5 +62,6 @@ else
     cloudflared tunnel route dns --overwrite-dns "$TUNNEL_NAME" "$WILDCARD_HOST"
     log_ok "DNS routing complete for $WILDCARD_HOST"
 fi
+
 
 log_ok "DNS routing complete."

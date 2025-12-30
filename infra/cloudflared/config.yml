@@ -11,8 +11,7 @@ ingress:
   - hostname: "*.ecs.sensualbyte.com"
     service: http://localhost:8080
 
-  # Uncomment if you want SSH over Cloudflare later
-  # - hostname: ssh.sensualbyte.com
-  #   service: tcp://localhost:22
+  - hostname: ssh.sensualbyte.com
+    service: tcp://localhost:2222
 
   - service: http_status:404

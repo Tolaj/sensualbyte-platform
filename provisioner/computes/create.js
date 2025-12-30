@@ -1,4 +1,4 @@
-const { execCmd } = require("../core/docker");
+const { request, ensureImage } = require("../core/dockerEngine");
 const { setupSSH } = require("../core/ssh");
 
 async function createCompute({
@@ -7,31 +7,41 @@ async function createCompute({
     memoryMb,
     network,
     image,
-    username
+    username,
+    publishSsh = false,   // 👈 NEW
+
 }) {
-    const name = `cmp_${computeId}`;
+    // computeId already comes as cmp_xxx from API
+    const name = computeId
 
-    await execCmd("docker", [
-        "run",
-        "-d",
-        "--name",
-        name,
-        "--network",
-        network,
-        "--cpus",
-        String(cpu),
-        "--memory",
-        `${memoryMb}m`,
+    await ensureImage(image);
 
-        "--label", "sensual.managed=true",
-        "--label", "sensual.type=compute",
-        "--label", `sensual.computeId=${computeId}`,
+    const { Id } = await request(
+        "POST",
+        `/containers/create?name=${encodeURIComponent(name)}`,
+        {
+            Image: image,
+            Cmd: ["sleep", "infinity"],
+            Labels: {
+                "sensualbyte.managed": "true",
+                "sensualbyte.type": "compute",
+                "sensualbyte.computeId": computeId,
+            },
+            HostConfig: {
+                NanoCPUs: Number(cpu) * 1e9,
+                Memory: Number(memoryMb) * 1024 * 1024,
+                NetworkMode: network,
+                PortBindings: publishSsh
+                    ? { "22/tcp": [{ HostPort: "2222" }] }
+                    : undefined
+            },
+            ExposedPorts: publishSsh ? { "22/tcp": {} } : undefined
+        }
+    );
 
-        image,
-        "sleep", "infinity"
-    ]);
-
+    await request("POST", `/containers/${Id}/start`);
     await setupSSH(name, username);
+
     return name;
 }
 

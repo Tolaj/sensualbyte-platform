@@ -3,6 +3,7 @@ version: "3.9"
 services:
   api:
     container_name: sensualbyte-api
+    user: "0:0"
     build:
       context: ../apps/api
       dockerfile: Dockerfile

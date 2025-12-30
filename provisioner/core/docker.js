@@ -1,58 +1,52 @@
-const { execFile } = require("child_process");
+const { request } = require("./dockerEngine");
 
-function execCmd(cmd, args, options = {}) {
-    return new Promise((resolve, reject) => {
-        execFile(cmd, args, { maxBuffer: 1024 * 1024 * 20, ...options }, (err, stdout, stderr) => {
-            if (err) {
-                const msg = (stderr || stdout || err.message || "").toString();
-                return reject(new Error(`${cmd} ${args.join(" ")} failed: ${msg}`));
-            }
-            resolve((stdout || "").toString().trim());
-        });
-    });
-}
-
-async function ensureNetwork(networkName) {
+async function ensureNetwork(name) {
     try {
-        await execCmd("docker", ["network", "inspect", networkName]);
+        await request("GET", `/networks/${name}`);
     } catch {
-        await execCmd("docker", ["network", "create", networkName]);
+        await request("POST", "/networks/create", {
+            Name: name,
+            Driver: "bridge",
+        });
     }
 }
 
-
-
-
 async function getContainerIP(containerName, networkName) {
-    // Safer: docker inspect by network
-    const out = await execCmd("docker", [
-        "inspect",
-        "-f",
-        `{{(index .NetworkSettings.Networks "${networkName}").IPAddress}}`,
-        containerName,
-    ]);
-    return out;
+    const info = await request("GET", `/containers/${containerName}/json`);
+    return info.NetworkSettings.Networks[networkName].IPAddress;
 }
 
-async function stopContainer(containerName) {
-    await execCmd("docker", ["stop", containerName]);
+async function startContainer(name) {
+    await request("POST", `/containers/${name}/start`);
 }
 
-async function startContainer(containerName) {
-    await execCmd("docker", ["start", containerName]);
+async function stopContainer(name) {
+    await request("POST", `/containers/${name}/stop`);
 }
 
-async function removeContainer(containerName) {
-    // remove force (stops if running)
-    await execCmd("docker", ["rm", "-f", containerName]);
+async function removeContainer(name) {
+    await request("DELETE", `/containers/${name}?force=true`);
 }
 
+async function listContainersByLabel(label) {
+    return request(
+        "GET",
+        `/containers/json?all=1&filters=${encodeURIComponent(
+            JSON.stringify({ label: [label] })
+        )}`
+    );
+}
+
+async function inspectContainer(name) {
+    return request("GET", `/containers/${name}/json`);
+}
 
 module.exports = {
-    execCmd,
     ensureNetwork,
     getContainerIP,
-    stopContainer,
     startContainer,
+    stopContainer,
     removeContainer,
+    listContainersByLabel,
+    inspectContainer,
 };

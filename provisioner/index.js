@@ -6,10 +6,10 @@ module.exports = {
     services: {
         create: require("./services/create").createService,
         health: require("./services/health").checkHealth,
-        logs: require("./services/logs").getLogs
+        logs: require("./services/logs").getLogs,
     },
 
     computes: {
-        create: require("./computes/create").createCompute
-    }
+        create: require("./computes/create").createCompute,
+    },
 };

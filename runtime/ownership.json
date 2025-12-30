@@ -1,3 +1,235 @@
 {
-    "ownerships": []
+  "ownerships": [
+    {
+      "resourceType": "service",
+      "resourceId": "fF0urQ8fpL",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T16:49:41.778Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "afd31xNfwg",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T17:32:04.642Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "0qeL-BunZg",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T17:46:34.626Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "j4BJ0qjhQX",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T17:52:32.973Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "rEGyteMfYo",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T17:53:50.030Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "7ql-ElN_7q",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T17:55:10.352Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "t9QTcpHgZk",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:22:00.740Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "o2iSuMvM1f",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:28:47.618Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "UWo3qat6kL",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:31:24.282Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "j6KDQdCcuy",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:39:04.236Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "CB7RcJMJ8h",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:50:48.597Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "uQPho-8VV5",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T18:59:52.166Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "7H19yi7bPe",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T19:01:07.361Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "UZ4RYfLuUl",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T19:02:29.717Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "OaWpLG4FHm",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T19:03:14.176Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "qi9xIRdGjP",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T19:06:50.855Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "RCEyoIcdMU",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T21:11:47.571Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "ERtAkxgHzk",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T21:23:30.655Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_qCsmrifnzp",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T21:43:31.943Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_18V18AdWy_",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T21:44:21.637Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_84xVkdPWQx",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:03:06.778Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_DF5Xnm9iBb",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:04:27.731Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_wnCOof7m3n",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:05:14.863Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_JZxmLZChUH",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:12:32.257Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_1u-d23TSVD",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:32:22.015Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_8XqUWsGwk2",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-29T22:33:19.240Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_UMnl_H9lFE",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T00:22:20.839Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_HR5zPHASxM",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T00:24:58.845Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_swy3CexP8y",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T00:30:53.089Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_6Zlkg2EoLa",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T00:34:26.740Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_6QU-CA4YZb",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T00:43:47.296Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_WGq7S9EGa6",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T01:14:56.625Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_exezsWtXu7",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T01:20:21.768Z"
+    }
+  ]
 }

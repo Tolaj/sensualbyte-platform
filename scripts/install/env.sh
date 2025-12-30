@@ -45,7 +45,7 @@ MONGO_DB=$MONGO_DB
 SSH_USER=$SSH_USER
 DEFAULT_CPU=1
 DEFAULT_MEMORY_MB=512
-DOCKER_NETWORK=sensual_net
+DOCKER_NETWORK=sensualbyte_net
 
 # ============ Domains ============
 BASE_DOMAIN=$BASE_DOMAIN

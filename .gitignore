@@ -6,3 +6,5 @@ runtime/volumes/*
 .DS_Store
 dist
 build
+ssh-keys
+.vscode

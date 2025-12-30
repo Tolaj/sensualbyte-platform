@@ -1,4 +1,4 @@
-const { execCmd } = require("../core/docker");
+const { request, ensureImage } = require("../core/dockerEngine");
 
 async function createService({
     serviceId,
@@ -6,31 +6,32 @@ async function createService({
     cpu,
     memoryMb,
     network,
-    internalPort
+    internalPort,
 }) {
-    const name = `svc_${serviceId}`;
+    const name = serviceId;
 
-    await execCmd("docker", [
-        "run",
-        "-d",
-        "--name",
-        name,
-        "--network",
-        network,
-        "--cpus",
-        String(cpu),
-        "--memory",
-        `${memoryMb}m`,
+    await ensureImage(image);
 
-        "--label", "sensual.managed=true",
-        "--label", "sensual.type=service",
-        "--label", `sensual.serviceId=${serviceId}`,
-        "--label", "sensual.health.path=/health",
-        "--label", `sensual.health.port=${internalPort}`,
+    const { Id } = await request("POST", `/containers/create?name=${encodeURIComponent(name)}`, {
+        Image: image,
+        Labels: {
+            "sensual.managed": "true",
+            "sensualbyte.type": "service",
+            "sensualbyte.serviceId": serviceId,
+            "sensualbyte.health.path": "/health",
+            "sensualbyte.health.port": String(internalPort),
+        },
+        ExposedPorts: {
+            [`${internalPort}/tcp`]: {},
+        },
+        HostConfig: {
+            NanoCPUs: cpu * 1e9,
+            Memory: memoryMb * 1024 * 1024,
+            NetworkMode: network,
+        },
+    });
 
-        image
-    ]);
-
+    await request("POST", `/containers/${Id}/start`);
     return name;
 }
 
