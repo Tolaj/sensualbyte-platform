@@ -1,5 +1,14 @@
 FROM node:20-alpine
 
+# -----------------------------
+# System dependencies (REQUIRED)
+# -----------------------------
+RUN apk add --no-cache \
+    openssh-client \
+    ca-certificates \
+    bash
+
+
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
