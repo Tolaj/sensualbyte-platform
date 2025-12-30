@@ -53,6 +53,7 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const image = body.image || "ubuntu:22.04";
     const username = body.username || config.SSH_USER;
     const projectId = body.projectId;
+    const publishSsh = Boolean(body.sshPublic);
 
     if (!projectId) {
         return res.status(400).json({ error: "projectId required" });
@@ -72,7 +73,8 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
         memoryMb,
         network: config.DOCKER_NETWORK,
         image,
-        username
+        username,
+        publishSsh
     });
 
     const ip = await provisioner.core.getContainerIP(
@@ -91,6 +93,7 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
         network: config.DOCKER_NETWORK,
         ip,
         username,
+        publishSsh,
         status: "running",
         createdAt: new Date().toISOString()
     };

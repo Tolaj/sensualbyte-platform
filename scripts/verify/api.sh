@@ -160,7 +160,7 @@ create_compute() {
       \"cpu\":1,
       \"memoryMb\":256,
       \"image\":\"ubuntu:22.04\",
-      \"username\":\"swapnil\",
+      \"username\":\"swapnil3\",
       \"sshPublic\":true
     }" | jq -r '.id')
 
@@ -241,9 +241,9 @@ run_service_full() {
   get_service
   check_service_health
   service_logs
-  # stop_service
-  # start_service
-  # delete_service
+  stop_service
+  start_service
+  delete_service
 }
 
 

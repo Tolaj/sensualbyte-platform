@@ -300,6 +300,27 @@
       "ownerUserId": "69515dab02473fac239a1655",
       "role": "owner",
       "createdAt": "2025-12-30T14:14:30.572Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_YMDSqcJwqq",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:21:47.081Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_ZXYPcv32jr",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:27:23.686Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_RE_rFrKug7",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:34:30.218Z"
     }
   ]
 }
