@@ -7,6 +7,7 @@ async function createService({
     memoryMb,
     network,
     internalPort,
+    healthPath
 }) {
     const name = serviceId;
 
@@ -18,7 +19,7 @@ async function createService({
             "sensual.managed": "true",
             "sensualbyte.type": "service",
             "sensualbyte.serviceId": serviceId,
-            "sensualbyte.health.path": "/health",
+            "sensualbyte.health.path": healthPath,
             "sensualbyte.health.port": String(internalPort),
         },
         ExposedPorts: {

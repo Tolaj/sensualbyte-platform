@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+// const { reconcileAll } = require("../jobs/reconciler");
+
 
 const { API_PORT, CORS_ORIGIN } = require("./config");
 
@@ -32,6 +34,8 @@ app.use("/api/computes", require("./routes/computes"));
 
 app.use("/api/teams", teamRoutes);
 app.use("/api/projects", projectRoutes);
+
+// setInterval(reconcileAll, 30_000);
 
 app.listen(API_PORT, '0.0.0.0', () => {
     console.log(`✅ API listening on :${API_PORT}`);

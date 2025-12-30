@@ -268,6 +268,121 @@
         "latencyMs": null,
         "lastError": null
       }
+    },
+    {
+      "id": "svc_XTgUq46A-1",
+      "projectId": "proj_n-VcATzI",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_XTgUq46A-1",
+      "ip": "172.18.0.6",
+      "internalPort": 3000,
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:07:26.466Z",
+      "health": {
+        "status": "unhealthy",
+        "latencyMs": 1,
+        "lastCheckedAt": "2025-12-30T14:07:26.577Z",
+        "lastError": "connect ECONNREFUSED 172.18.0.6:3000"
+      }
+    },
+    {
+      "id": "svc_IUS_zQLvDb",
+      "projectId": "proj_skj3wXDr",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_IUS_zQLvDb",
+      "ip": "172.18.0.7",
+      "internalPort": 3000,
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:10:05.589Z",
+      "health": {
+        "status": "unhealthy",
+        "latencyMs": 1,
+        "lastCheckedAt": "2025-12-30T14:10:05.680Z",
+        "lastError": "connect ECONNREFUSED 172.18.0.7:3000"
+      }
+    },
+    {
+      "id": "svc_lXoDYRJVH6",
+      "projectId": "proj_sr-OOuSv",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_lXoDYRJVH6",
+      "ip": "172.18.0.8",
+      "internalPort": 80,
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:10:58.037Z",
+      "health": {
+        "status": "unhealthy",
+        "latencyMs": 3,
+        "lastCheckedAt": "2025-12-30T14:10:58.128Z",
+        "lastError": "HTTP 404"
+      }
+    },
+    {
+      "id": "svc_8777bSZQyh",
+      "projectId": "proj_z_zDDFSu",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_8777bSZQyh",
+      "ip": "172.18.0.9",
+      "internalPort": 80,
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:11:29.314Z",
+      "health": {
+        "status": "unhealthy",
+        "latencyMs": 1,
+        "lastCheckedAt": "2025-12-30T14:11:29.398Z",
+        "lastError": "HTTP 404"
+      }
+    },
+    {
+      "id": "svc_itTPf51bYD",
+      "projectId": "proj_FGZlhSpG",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_itTPf51bYD",
+      "ip": "172.18.0.10",
+      "internalPort": 80,
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:12:28.290Z",
+      "health": {
+        "status": "unhealthy",
+        "latencyMs": 1,
+        "lastCheckedAt": "2025-12-30T14:12:28.380Z",
+        "lastError": "HTTP 404"
+      }
+    },
+    {
+      "id": "svc_Aj7tM10OOZ",
+      "projectId": "proj_ObyVTvqK",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_Aj7tM10OOZ",
+      "ip": "172.18.0.11",
+      "internalPort": 80,
+      "healthPath": "/",
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-30T14:14:30.563Z",
+      "health": {
+        "status": "healthy",
+        "latencyMs": 1,
+        "lastCheckedAt": "2025-12-30T14:14:30.660Z",
+        "lastError": null
+      }
     }
   ]
 }

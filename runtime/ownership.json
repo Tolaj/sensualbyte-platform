@@ -230,6 +230,76 @@
       "ownerUserId": "69515dab02473fac239a1655",
       "role": "owner",
       "createdAt": "2025-12-30T01:20:21.768Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_nF2Ca7RaDL",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T13:12:19.332Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_ubCuECXVFj",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T13:38:09.179Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_EjG-Iv23-w",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:00:53.127Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_Ym4mxBlf6H",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:01:37.852Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_XTgUq46A-1",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:07:26.474Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_IUS_zQLvDb",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:10:05.597Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_lXoDYRJVH6",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:10:58.045Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_8777bSZQyh",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:11:29.323Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_itTPf51bYD",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:12:28.302Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_Aj7tM10OOZ",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-30T14:14:30.572Z"
     }
   ]
 }

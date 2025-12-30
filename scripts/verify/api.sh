@@ -87,7 +87,9 @@ create_service() {
       \"projectId\":\"$PROJECT_ID\",
       \"image\":\"nginx:alpine\",
       \"cpu\":1,
-      \"memoryMb\":128
+      \"memoryMb\":128,
+      \"internalPort\":80,
+      \"healthPath\":\"/\"
     }" | jq -r '.id')
 
   [[ "$SERVICE_ID" == "null" ]] && exit 1
@@ -239,9 +241,9 @@ run_service_full() {
   get_service
   check_service_health
   service_logs
-  stop_service
-  start_service
-  delete_service
+  # stop_service
+  # start_service
+  # delete_service
 }
 
 

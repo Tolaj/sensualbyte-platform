@@ -8,10 +8,9 @@ const { requireAuth } = require("../middleware/authMiddleware");
 const config = require("../config");
 
 let provisioner;
-
 try {
     provisioner = require("../../provisioner");
-} catch (err) {
+} catch {
     provisioner = require("../../../../provisioner");
 }
 
@@ -31,6 +30,16 @@ function writeStore(data) {
 router.get("/", requireAuth(["super_admin", "admin"]), (req, res) => {
     const data = readStore();
     res.json(data.computes);
+});
+
+/**
+ * GET COMPUTE
+ */
+router.get("/:id", requireAuth(["super_admin", "admin"]), (req, res) => {
+    const data = readStore();
+    const compute = data.computes.find(c => c.id === req.params.id);
+    if (!compute) return res.status(404).json({ error: "Not found" });
+    res.json(compute);
 });
 
 /**
@@ -97,6 +106,36 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     });
 
     res.json(compute);
+});
+
+/**
+ * STOP COMPUTE
+ */
+router.post("/:id/stop", requireAuth(["super_admin", "admin"]), async (req, res) => {
+    const data = readStore();
+    const compute = data.computes.find(c => c.id === req.params.id);
+    if (!compute) return res.status(404).json({ error: "Not found" });
+
+    await provisioner.core.stopContainer(compute.containerName);
+    compute.status = "stopped";
+    writeStore(data);
+
+    res.json({ ok: true });
+});
+
+/**
+ * START COMPUTE
+ */
+router.post("/:id/start", requireAuth(["super_admin", "admin"]), async (req, res) => {
+    const data = readStore();
+    const compute = data.computes.find(c => c.id === req.params.id);
+    if (!compute) return res.status(404).json({ error: "Not found" });
+
+    await provisioner.core.startContainer(compute.containerName);
+    compute.status = "running";
+    writeStore(data);
+
+    res.json({ ok: true });
 });
 
 /**

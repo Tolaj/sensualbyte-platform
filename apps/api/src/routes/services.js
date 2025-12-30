@@ -57,7 +57,10 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
     const cpu = Number(body.cpu || config.DEFAULT_CPU);
     const memoryMb = Number(body.memoryMb || config.DEFAULT_MEMORY_MB);
     const image = body.image || "node:20-alpine";
-    const internalPort = 3000;
+
+    const internalPort = Number(body.internalPort || 3000);
+    const healthPath = (body.healthPath || "/health").trim();
+
 
     if (memoryMb < 128) {
         return res.status(400).json({ error: "memoryMb must be >= 128" });
@@ -73,7 +76,8 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
         cpu,
         memoryMb,
         network: config.DOCKER_NETWORK,
-        internalPort
+        internalPort,
+        healthPath
     });
 
     const ip = await provisioner.core.getContainerIP(
@@ -91,6 +95,7 @@ router.post("/", requireAuth(["super_admin", "admin"]), async (req, res) => {
         containerName,
         ip,
         internalPort,
+        healthPath,
         cpu,
         memoryMb,
         status: "running",
