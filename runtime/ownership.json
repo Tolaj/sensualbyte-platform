@@ -321,6 +321,34 @@
       "ownerUserId": "69515dab02473fac239a1655",
       "role": "owner",
       "createdAt": "2025-12-30T14:34:30.218Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_tta5QVWj1b",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-31T11:38:54.619Z"
+    },
+    {
+      "resourceType": "service",
+      "resourceId": "svc_C8dT5abcXe",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-31T11:39:07.960Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_VYSoAAUbr2",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-31T11:40:23.675Z"
+    },
+    {
+      "resourceType": "compute",
+      "resourceId": "cmp_G7Vgl8kjY4",
+      "ownerUserId": "69515dab02473fac239a1655",
+      "role": "owner",
+      "createdAt": "2025-12-31T11:43:35.288Z"
     }
   ]
 }

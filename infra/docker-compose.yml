@@ -10,12 +10,13 @@ services:
     env_file:
       - ../.env
     ports:
-    - "3001:3001" 
+      - "3001:3001"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ../runtime:/app/runtime
       - ../ssh-keys:/app/ssh-keys
-      - ../provisioner:/app/provisioner  
+      - ../provisioner:/app/provisioner
+      - ../ssh-keys:/app/ssh-keys
     restart: unless-stopped
     networks:
       - sensualbyte_net
@@ -25,16 +26,15 @@ services:
     build:
       context: ../apps/dashboard/frontend
       dockerfile: Dockerfile
-    env_file:
-      - ../.env
-    ports:
-    - "3002:3002"
-    volumes:
-      - dashboard_build:/dist
+    # env_file:
+    #   - ../.env
+    # ports:
+    # - "3002:3002"
+    # volumes:
+    #   - dashboard_build:/dist
     restart: unless-stopped
     networks:
       - sensualbyte_net
-
 
   mongo:
     image: mongo:7
@@ -48,7 +48,6 @@ services:
     networks:
       - sensualbyte_net
 
-
   nginx:
     image: nginx:alpine
     container_name: sensualbyte-nginx
@@ -58,13 +57,12 @@ services:
       - "8080:80"
     volumes:
       - ./nginx/gateway.conf:/etc/nginx/nginx.conf:ro
-      
+
       # ✅ generated includes
       - ./nginx/sensualbyte-apps.conf:/etc/nginx/conf.d/sensualbyte-apps.conf:ro
       - ./nginx/sensualbyte-apps-servers.conf:/etc/nginx/conf.d/sensualbyte-apps-servers.conf:ro
-
       # ✅ CRA build output
-      - ../apps/dashboard/frontend/build:/usr/share/nginx/html:ro
+      # - ../apps/dashboard/frontend/build:/usr/share/nginx/html:ro
 
     restart: unless-stopped
     networks:
@@ -79,10 +77,24 @@ services:
       - ./cloudflared/config.yml:/etc/cloudflared/config.yml:ro
     command: tunnel --config /etc/cloudflared/config.yml run
     restart: unless-stopped
+  # ssh-router:
+  #   container_name: sensualbyte-ssh-router
+  #   build: ./ssh-router
+  #   ports:
+  #     - "2222:22"
+  #   volumes:
+  #     - ../ssh-keys:/ssh-keys:ro
+  #   networks:
+  #     - sensualbyte_net
+  #   restart: unless-stopped
+
+
+
 
 volumes:
   dashboard_build:
   mongo_data:
+
 
 networks:
   sensualbyte_net:

@@ -383,6 +383,26 @@
         "lastCheckedAt": "2025-12-30T14:14:30.660Z",
         "lastError": null
       }
+    },
+    {
+      "id": "svc_tta5QVWj1b",
+      "projectId": "proj_6k8d56nh",
+      "name": "verify-service",
+      "image": "nginx:alpine",
+      "containerName": "svc_tta5QVWj1b",
+      "ip": "172.18.0.6",
+      "internalPort": 80,
+      "healthPath": "/",
+      "cpu": 1,
+      "memoryMb": 128,
+      "status": "running",
+      "createdAt": "2025-12-31T11:38:54.576Z",
+      "health": {
+        "status": "unknown",
+        "lastCheckedAt": null,
+        "latencyMs": null,
+        "lastError": null
+      }
     }
   ]
 }
