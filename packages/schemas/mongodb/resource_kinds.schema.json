@@ -1,0 +1,27 @@
+{
+  "collection": "resource_kinds",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["kind", "displayName", "controller", "specSchemaRef", "createdAt", "updatedAt"],
+      "properties": {
+        "_id": {},
+        "kind": { "bsonType": "string" },
+        "displayName": { "bsonType": "string" },
+        "description": { "bsonType": ["string", "null"] },
+        "controller": {
+          "bsonType": "object",
+          "required": ["name", "version"],
+          "properties": {
+            "name": { "bsonType": "string" },
+            "version": { "bsonType": "string" }
+          }
+        },
+        "specSchemaRef": { "bsonType": "string" },
+        "metadata": { "bsonType": ["object", "null"] },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

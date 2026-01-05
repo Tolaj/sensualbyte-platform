@@ -1,21 +1,16 @@
 {
-    "name": "sensual-platform-api",
-    "version": "1.0.0",
-    "main": "src/server.js",
-    "type": "commonjs",
-    "scripts": {
-        "dev": "node --watch src/server.js",
-        "start": "node src/server.js"
-    },
-    "dependencies": {
-        "bcryptjs": "^2.4.3",
-        "cookie-parser": "^1.4.6",
-        "cors": "^2.8.5",
-        "dotenv": "^16.4.5",
-        "express": "^4.19.2",
-        "jsonwebtoken": "^9.0.2",
-        "module-alias": "^2.2.3",
-        "mongodb": "^6.8.0",
-        "nanoid": "^5.0.7"
-    }
+  "name": "@sensualbyte/api",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "db:setup": "node src/db/setup.js",
+    "db:seed": "node src/db/seed.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.9.0",
+    "redis": "^4.7.0",
+    "uuid": "^9.0.1"
+  }
 }

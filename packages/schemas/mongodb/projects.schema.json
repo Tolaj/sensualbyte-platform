@@ -1,0 +1,18 @@
+{
+  "collection": "projects",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["projectId", "teamId", "name", "createdBy", "createdAt"],
+      "properties": {
+        "_id": {},
+        "projectId": { "bsonType": "string" },
+        "teamId": { "bsonType": "string" },
+        "name": { "bsonType": "string" },
+        "createdBy": { "bsonType": "string" },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": ["date", "null"] }
+      }
+    }
+  }
+}

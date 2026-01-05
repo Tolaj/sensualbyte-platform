@@ -1,0 +1,20 @@
+{
+  "collection": "events_outbox",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["eventId", "type", "resourceType", "resourceId", "processed", "createdAt"],
+      "properties": {
+        "_id": {},
+        "eventId": { "bsonType": "string" },
+        "type": { "bsonType": "string", "enum": ["RESOURCE_CHANGED", "SECRET_CHANGED", "RBAC_CHANGED"] },
+        "resourceType": { "bsonType": "string", "enum": ["resource", "secret", "role_binding"] },
+        "resourceId": { "bsonType": "string" },
+        "payload": { "bsonType": ["object", "null"] },
+        "processed": { "bsonType": "bool" },
+        "createdAt": { "bsonType": "date" },
+        "processedAt": { "bsonType": ["date", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "collection": "audit_logs",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["actorUserId", "action", "resourceType", "resourceId", "createdAt"],
+      "properties": {
+        "_id": {},
+        "actorUserId": { "bsonType": "string" },
+        "action": { "bsonType": "string" },
+        "resourceType": { "bsonType": "string" },
+        "resourceId": { "bsonType": "string" },
+        "metadata": { "bsonType": ["object", "null"] },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

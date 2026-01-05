@@ -1,0 +1,18 @@
+{
+  "collection": "role_bindings",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["resourceType", "resourceId", "subjectType", "subjectId", "role", "createdAt"],
+      "properties": {
+        "_id": {},
+        "resourceType": { "bsonType": "string", "enum": ["project", "resource", "secret"] },
+        "resourceId": { "bsonType": "string" },
+        "subjectType": { "bsonType": "string", "enum": ["user", "team"] },
+        "subjectId": { "bsonType": "string" },
+        "role": { "bsonType": "string", "enum": ["owner", "admin", "viewer"] },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "collection": "team_members",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["teamId", "userId", "role", "createdAt"],
+      "properties": {
+        "_id": {},
+        "teamId": { "bsonType": "string" },
+        "userId": { "bsonType": "string" },
+        "role": { "bsonType": "string", "enum": ["owner", "admin", "member"] },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

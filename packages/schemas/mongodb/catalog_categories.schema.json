@@ -1,0 +1,18 @@
+{
+  "collection": "catalog_categories",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["categoryId", "name", "order", "createdAt", "updatedAt"],
+      "properties": {
+        "_id": {},
+        "categoryId": { "bsonType": "string" },
+        "name": { "bsonType": "string" },
+        "description": { "bsonType": ["string", "null"] },
+        "order": { "bsonType": "int" },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

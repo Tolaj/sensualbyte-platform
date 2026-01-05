@@ -1,0 +1,17 @@
+{
+  "collection": "deployments",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["deploymentId", "resourceId", "version", "status", "createdAt"],
+      "properties": {
+        "_id": {},
+        "deploymentId": { "bsonType": "string" },
+        "resourceId": { "bsonType": "string" },
+        "version": { "bsonType": "int" },
+        "status": { "bsonType": "string", "enum": ["queued", "running", "succeeded", "failed"] },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

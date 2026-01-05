@@ -1,42 +1,24 @@
-const express = require("express");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
-// const { reconcileAll } = require("../jobs/reconciler");
+import "dotenv/config";
+import { createApp } from "./app.js";
+import { getMongoDb } from "./db/mongo.js";
+
+const PORT = process.env.PORT || 3001;
+
+async function main() {
+    const db = await getMongoDb();
+    const app = createApp({ db });
 
 
-const { API_PORT, CORS_ORIGIN } = require("./config");
+    app.get("/", (req, res) => {
+        res.json({ status: "OK" });
+    });
 
-const health = require("./routes/health");
-const authRoutes = require("./routes/auth");
-const usersRoutes = require("./routes/users");
+    app.listen(PORT, "0.0.0.0", () => {
+        console.log(`✅ API listening on http://localhost:${PORT}`);
+    });
+}
 
-const teamRoutes = require("./routes/teams");
-const projectRoutes = require("./routes/projects");
-
-
-const app = express();
-
-app.use(cors({
-    origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN,
-    credentials: true
-}));
-
-app.use(cookieParser());
-app.use(express.json({ limit: "2mb" }));
-
-
-app.use("/api/health", health);
-app.use("/api/auth", authRoutes);
-app.use("/api/users", usersRoutes);
-
-app.use("/api/services", require("./routes/services"));
-app.use("/api/computes", require("./routes/computes"));
-
-app.use("/api/teams", teamRoutes);
-app.use("/api/projects", projectRoutes);
-
-// setInterval(reconcileAll, 30_000);
-
-app.listen(API_PORT, '0.0.0.0', () => {
-    console.log(`✅ API listening on :${API_PORT}`);
+main().catch((err) => {
+    console.error("❌ Failed to start API:", err);
+    process.exit(1);
 });

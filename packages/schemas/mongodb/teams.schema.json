@@ -1,0 +1,16 @@
+{
+  "collection": "teams",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["teamId", "name", "createdBy", "createdAt"],
+      "properties": {
+        "_id": {},
+        "teamId": { "bsonType": "string" },
+        "name": { "bsonType": "string" },
+        "createdBy": { "bsonType": "string" },
+        "createdAt": { "bsonType": "date" }
+      }
+    }
+  }
+}

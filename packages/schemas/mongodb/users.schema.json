@@ -1,0 +1,24 @@
+{
+  "collection": "users",
+  "validationLevel": "strict",
+  "validationAction": "error",
+  "validator": {
+    "$jsonSchema": {
+      "bsonType": "object",
+      "required": ["userId", "email", "passwordHash", "globalRole", "active", "createdAt", "updatedAt"],
+      "properties": {
+        "_id": {},
+        "userId": { "bsonType": "string" },
+        "email": { "bsonType": "string" },
+        "passwordHash": { "bsonType": "string" },
+        "name": { "bsonType": ["string", "null"] },
+        "username": { "bsonType": ["string", "null"] },
+        "globalRole": { "bsonType": "string", "enum": ["super_admin", "platform_admin", "user"] },
+        "active": { "bsonType": "bool" },
+        "createdAt": { "bsonType": "date" },
+        "updatedAt": { "bsonType": "date" },
+        "lastLoginAt": { "bsonType": ["date", "null"] }
+      }
+    }
+  }
+}
