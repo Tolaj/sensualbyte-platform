@@ -1,0 +1,11 @@
+{
+  "name": "sensual-platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "workers/*",
+    "provisioner",
+    "packages/*"
+  ],
+  "version": "0.0.1"
+}
