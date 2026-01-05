@@ -1,0 +1,8 @@
+{
+    "name": "@sensualbyte/provisioner",
+    "private": true,
+    "type": "module",
+    "dependencies": {
+        "dockerode": "^4.0.2"
+    }
+}

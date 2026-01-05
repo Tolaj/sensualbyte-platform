@@ -1,6 +1,7 @@
 {
   "name": "@sensualbyte/api",
   "type": "module",
+  "private": true,
   "scripts": {
     "dev": "node src/server.js",
     "db:setup": "node src/db/setup.js",
