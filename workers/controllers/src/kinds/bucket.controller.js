@@ -9,7 +9,7 @@ export async function reconcileBucket({ resource, statusRepo, obsCache }) {
         `sb-${resource.projectId}-${resource.resourceId}`.toLowerCase();
 
     if (resource.desiredState === "deleted") {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "deleting",
             message: "Deleting bucket"
@@ -17,7 +17,7 @@ export async function reconcileBucket({ resource, statusRepo, obsCache }) {
 
         const r = await deleteBucket(minio, bucketName);
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: r.removed ? "Deleted" : "Delete skipped",
@@ -35,7 +35,7 @@ export async function reconcileBucket({ resource, statusRepo, obsCache }) {
 
     await ensureBucket(minio, bucketName);
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: "Bucket ready",

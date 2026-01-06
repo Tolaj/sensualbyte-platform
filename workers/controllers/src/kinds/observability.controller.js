@@ -1,7 +1,7 @@
 import { setStatus } from "../common/status.js";
 
 export async function reconcileObservability({ resource, statusRepo, obsCache }) {
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: "Observability (v1 stub)",

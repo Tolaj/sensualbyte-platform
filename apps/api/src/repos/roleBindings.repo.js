@@ -11,17 +11,20 @@ export function roleBindingsRepo(db) {
         },
 
         async upsert(doc) {
+            const filter = {
+                resourceType: doc.resourceType,
+                resourceId: doc.resourceId,
+                subjectType: doc.subjectType,
+                subjectId: doc.subjectId
+            };
+
             await col.updateOne(
-                {
-                    resourceType: doc.resourceType,
-                    resourceId: doc.resourceId,
-                    subjectType: doc.subjectType,
-                    subjectId: doc.subjectId
-                },
-                { $setOnInsert: doc },
+                filter,
+                { $setOnInsert: { createdAt: doc.createdAt || new Date() }, $set: { role: doc.role } },
                 { upsert: true }
             );
-            return doc;
+
+            return col.findOne(filter);
         }
     };
 }

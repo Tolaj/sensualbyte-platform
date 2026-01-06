@@ -10,6 +10,6 @@
         "dotenv": "^16.4.5",
         "mongodb": "^6.9.0",
         "redis": "^4.7.0",
-        "@sensualbyte/provisioner": "workspace:*"
+        "@sensualbyte/provisioner": "file:../../provisioner"
     }
 }

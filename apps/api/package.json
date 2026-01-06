@@ -4,15 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "node src/server.js",
+    "start": "node src/server.js",
     "db:setup": "node src/db/setup.js",
-    "db:seed": "node src/db/seed.js"
+    "db:reset": "DB_RESET=true node src/db/setup.js",
+    "db:seed": "node src/db/seed.js",
+    "test": "node --test test"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "helmet": "^8.1.0",
     "mongodb": "^6.9.0",
+    "morgan": "^1.10.1",
     "redis": "^4.7.0",
-    "uuid": "^9.0.1",
-    "ajv": "^8.17.1"
+    "uuid": "^9.0.1"
   }
 }

@@ -13,7 +13,7 @@ export async function reconcileMqtt({ resource, statusRepo, obsCache }) {
     const docker = getDocker();
 
     if (resource.desiredState === "deleted") {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "deleting",
             message: "Deleting MQTT"
@@ -21,7 +21,7 @@ export async function reconcileMqtt({ resource, statusRepo, obsCache }) {
 
         const r = await removeMosquittoIfExists(docker, resource.resourceId);
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: r.removed ? "Deleted" : "Already absent",
@@ -37,9 +37,9 @@ export async function reconcileMqtt({ resource, statusRepo, obsCache }) {
         return { statusApplied: true };
     }
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
-        state: "reconciling",
+        state: "creating",
         message: "Reconciling MQTT"
     });
 
@@ -52,7 +52,7 @@ export async function reconcileMqtt({ resource, statusRepo, obsCache }) {
 
     const observed = extractMosquittoObserved(inspect);
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: resource.desiredState === "paused" ? "MQTT stopped" : "MQTT running",

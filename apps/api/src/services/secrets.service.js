@@ -1,13 +1,24 @@
 import { secretsRepo } from "../repos/secrets.repo.js";
+
+function notFound(message, details = null) {
+    const e = new Error(message);
+    e.statusCode = 404;
+    if (details) e.details = details;
+    return e;
+}
+
 export function secretsService(db) {
-    const repo = secretsRepo(db);
+    const secrets = secretsRepo(db);
+
     return {
-        get: async (secretId) => {
-            const s = await repo.get(secretId);
-            if (!s) { const e = new Error(`Secret not found: ${secretId}`); e.statusCode = 404; throw e; }
-            // v1: do not return ciphertext by default; require explicit query ?includeCiphertext=1
+        async get(secretId) {
+            const s = await secrets.get(secretId);
+            if (!s) throw notFound("Secret not found", { secretId });
             return s;
         },
-        listByScope: (scopeType, scopeId) => repo.listByScope(scopeType, scopeId)
+
+        async listByScope(scopeType, scopeId) {
+            return secrets.listByScope(scopeType, scopeId);
+        }
     };
 }

@@ -10,8 +10,15 @@
   "scripts": {
     "dev:api": "npm -w apps/api run dev",
     "dev:worker": "npm -w workers/controllers run dev",
+    "start:api": "npm -w apps/api run start",
+    "start:worker": "npm -w workers/controllers run dev",
     "db:setup": "npm -w apps/api run db:setup",
-    "db:seed": "npm -w apps/api run db:seed"
+    "db:reset": "npm -w apps/api run db:reset",
+    "db:seed": "npm -w apps/api run db:seed",
+    "test:provisioner": "npm -w provisioner test",
+    "test:worker": "npm -w workers/controllers test",
+    "test:api": "npm -w apps/api test",
+    "test": "npm run test:provisioner && npm run test:worker && npm run test:api"
   },
   "dependencies": {
     "dotenv": "^17.2.3"

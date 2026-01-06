@@ -6,7 +6,7 @@ export async function reconcileVolume({ resource, statusRepo, obsCache }) {
     const name = resource.spec?.name || `sb_vol_${resource.resourceId}`;
 
     if (resource.desiredState === "deleted") {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "deleting",
             message: "Deleting volume"
@@ -14,7 +14,7 @@ export async function reconcileVolume({ resource, statusRepo, obsCache }) {
 
         const r = await removeVolumeIfExists(docker, name);
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: r.removed ? "Deleted" : "Already absent",
@@ -37,7 +37,7 @@ export async function reconcileVolume({ resource, statusRepo, obsCache }) {
 
     const info = await v.inspect();
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: "Volume ready",

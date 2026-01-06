@@ -14,7 +14,7 @@ export async function reconcileHttpRoute({ resource, statusRepo, obsCache }) {
     const targetPort = resource.spec?.targetPort;
 
     if (!hostname || !targetResourceId || !targetPort) {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "error",
             message: "Invalid http_route spec",
@@ -26,7 +26,7 @@ export async function reconcileHttpRoute({ resource, statusRepo, obsCache }) {
     if (resource.desiredState === "deleted") {
         await deleteNginxRoute({ docker, routeResourceId: resource.resourceId });
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: "Route deleted",
@@ -44,9 +44,9 @@ export async function reconcileHttpRoute({ resource, statusRepo, obsCache }) {
 
     const targetIp = await resolveTargetIp(obsCache, targetResourceId);
     if (!targetIp) {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
-            state: "reconciling",
+            state: "creating",
             message: "Waiting for target IP",
             details: { targetResourceId }
         });
@@ -61,7 +61,7 @@ export async function reconcileHttpRoute({ resource, statusRepo, obsCache }) {
         targetPort
     });
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: "Route ready",

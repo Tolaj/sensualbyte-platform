@@ -15,7 +15,11 @@
           "bsonType": "string"
         },
         "observedGeneration": {
-          "bsonType": "int"
+          "bsonType": [
+            "int",
+            "long",
+            "double"
+          ]
         },
         "state": {
           "bsonType": "string",
@@ -36,7 +40,8 @@
           "bsonType": [
             "object",
             "null"
-          ]
+          ],
+          "additionalProperties": true
         },
         "lastUpdatedAt": {
           "bsonType": "date"

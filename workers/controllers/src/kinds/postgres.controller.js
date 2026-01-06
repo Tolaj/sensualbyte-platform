@@ -14,7 +14,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
     const volumeName = `sb_pgdata_${resource.resourceId}`;
 
     if (resource.desiredState === "deleted") {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "deleting",
             message: "Deleting postgres"
@@ -22,7 +22,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
 
         const r = await removePostgresIfExists(docker, resource.resourceId);
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: r.removed ? "Deleted" : "Already absent",
@@ -40,7 +40,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
 
     const secretId = resource.spec?.passwordSecretRef;
     if (!secretId) {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "error",
             message: "Postgres missing spec.passwordSecretRef (API should have created it)",
@@ -51,7 +51,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
 
     const secret = await secretsRepo.get(secretId);
     if (!secret) {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "error",
             message: "Password secret not found",
@@ -64,7 +64,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
     try {
         passwordPlain = decryptString(secret.ciphertext, secret.encryptionMeta);
     } catch (e) {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "error",
             message: "Failed to decrypt password secret",
@@ -73,9 +73,9 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
         return { statusApplied: true };
     }
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
-        state: "reconciling",
+        state: "creating",
         message: "Reconciling postgres"
     });
 
@@ -83,7 +83,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
     const inspect = await startPostgres(c);
     const observed = extractPostgresObserved(inspect);
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: "Postgres ready",

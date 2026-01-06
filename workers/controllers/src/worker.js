@@ -23,16 +23,21 @@ async function main() {
         obsCache: observedCache(redis)
     });
 
-    console.log("✅ worker running", { id: process.env.WORKER_ID || "worker_1" });
+    console.log("✅ worker running", { id: process.env.WORKER_ID || "worker_01" });
 
     while (true) {
         try {
             const didWork = await poller.tick();
             if (!didWork) await new Promise((r) => setTimeout(r, POLL_MS));
         } catch (e) {
-            console.error("worker error:", e?.message || e);
+            console.error("worker error:", {
+                message: e?.message,
+                code: e?.code,
+                schemaRulesNotSatisfied: e?.errInfo?.details?.schemaRulesNotSatisfied,
+            });
             await new Promise((r) => setTimeout(r, 800));
         }
+
     }
 }
 

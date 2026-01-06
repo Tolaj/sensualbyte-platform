@@ -2,18 +2,20 @@ import { Router } from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { requireProjectRole } from "../middleware/rbac.js";
 import { projectsController } from "../controllers/projects.controller.js";
+import { asyncHandler } from "../utils/http.js";
 
 export function projectsRoutes() {
     const r = Router();
     r.use(requireAuth());
 
-    r.get("/", async (req, res, next) => { try { await projectsController(req.ctx.db).list(req, res); } catch (e) { next(e); } });
-    r.post("/", async (req, res, next) => { try { await projectsController(req.ctx.db).create(req, res); } catch (e) { next(e); } });
+    r.get("/", asyncHandler((req, res) => projectsController(req.ctx.db).list(req, res)));
+    r.post("/", asyncHandler((req, res) => projectsController(req.ctx.db).create(req, res)));
 
-    // project read requires at least viewer
-    r.get("/:projectId", requireProjectRole("viewer"), async (req, res, next) => {
-        try { await projectsController(req.ctx.db).get(req, res); } catch (e) { next(e); }
-    });
+    r.get(
+        "/:projectId",
+        requireProjectRole("viewer"),
+        asyncHandler((req, res) => projectsController(req.ctx.db).get(req, res))
+    );
 
     return r;
 }

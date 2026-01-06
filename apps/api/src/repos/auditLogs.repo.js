@@ -9,6 +9,11 @@ export function auditLogsRepo(db) {
 
         async list({ limit = 100 } = {}) {
             return col.find({}).sort({ createdAt: -1 }).limit(limit).toArray();
+        },
+
+        async insert(doc) {
+            await col.insertOne(doc);
+            return doc;
         }
     };
 }

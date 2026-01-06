@@ -23,6 +23,16 @@ export function teamMembersRepo(db) {
         async listTeamsForUser(userId) {
             const rows = await col.find({ userId }).toArray();
             return rows.map((r) => r.teamId);
-        }
+        },
+
+        async addOrUpdateRole(doc) {
+            const { teamId, userId } = doc;
+            await col.updateOne(
+                { teamId, userId },
+                { $setOnInsert: { teamId, userId, createdAt: doc.createdAt || new Date() }, $set: { role: doc.role || "member" } },
+                { upsert: true }
+            );
+            return col.findOne({ teamId, userId });
+        },
     };
 }

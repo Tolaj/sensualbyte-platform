@@ -1,7 +1,13 @@
-// v1: simple header auth. Later: JWT/session.
+// v1: header auth. Later: JWT/session.
 export function requireAuth() {
     return (req, _res, next) => {
-        req.userId = req.headers["x-user-id"] || "user_demo";
+        const header = req.headers["x-user-id"];
+        const userId =
+            typeof header === "string" && header.trim()
+                ? header.trim()
+                : "user_demo";
+
+        req.userId = userId;
         next();
     };
 }

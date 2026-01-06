@@ -1,19 +1,14 @@
-export async function setStatus(statusRepo, resourceId, patch) {
+export async function setStatus(statusRepo, resource, patch) {
     const safe = { ...(patch || {}) };
     delete safe.resourceId;
 
-    await statusRepo.upsert(resourceId, {
-        ...safe,
-        lastUpdatedAt: new Date()
-    });
+    // REQUIRED by schema:
+    if (safe.observedGeneration === undefined || safe.observedGeneration === null) {
+        safe.observedGeneration = resource?.generation ?? 0;
+    }
 
-    return statusRepo.upsert(resourceId, {}); // return latest doc
-}
+    safe.lastUpdatedAt = new Date();
 
-export function statusPatch(state, message = null, details = {}) {
-    return {
-        state,
-        message,
-        details
-    };
+    await statusRepo.upsert(resource.resourceId, safe);
+    return statusRepo.get(resource.resourceId); // <-- read latest (no extra write)
 }

@@ -36,7 +36,7 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
 
     // DELETE
     if (resource.desiredState === "deleted") {
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "deleting",
             message: "Deleting compute"
@@ -44,7 +44,7 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
 
         const r = await removeComputeIfExists(docker, resource.resourceId);
 
-        await setStatus(statusRepo, resource.resourceId, {
+        await setStatus(statusRepo, resource, {
             observedGeneration: resource.generation || 0,
             state: "ready",
             message: r.removed ? "Deleted" : "Already absent",
@@ -79,15 +79,15 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
             createdAt: new Date()
         });
 
-        await setStatus(statusRepo, resource.resourceId, {
-            state: "reconciling",
+        await setStatus(statusRepo, resource, {
+            state: "creating",
             message: "Generated SSH keypair",
             details: { sshKeySecretRef: secretId, publicKey: kp.publicKey }
         });
     }
 
-    await setStatus(statusRepo, resource.resourceId, {
-        state: "reconciling",
+    await setStatus(statusRepo, resource, {
+        state: "creating",
         message: "Reconciling compute",
         observedGeneration: resource.generation || 0
     });
@@ -102,7 +102,7 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
     const observed = extractComputeObserved(inspect);
     const ssh = sshEndpoint(resource, observed);
 
-    await setStatus(statusRepo, resource.resourceId, {
+    await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: resource.desiredState === "paused" ? "Compute stopped" : "Compute running",

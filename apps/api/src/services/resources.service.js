@@ -1,12 +1,24 @@
 import { newId } from "../utils/ids.js";
 import { now } from "../utils/time.js";
+
 import { catalogItemsRepo } from "../repos/catalogItems.repo.js";
 import { resourcesRepo } from "../repos/resources.repo.js";
 import { resourceStatusRepo } from "../repos/resourceStatus.repo.js";
 import { eventsOutboxRepo } from "../repos/eventsOutbox.repo.js";
 import { secretsRepo } from "../repos/secrets.repo.js";
+
 import { applyOfferingDefaults } from "./catalog.service.js";
 import { encryptString } from "../../../../packages/shared/crypto.js";
+import { deepMerge } from "../../../../packages/shared/offeringDefaults.js"; // ✅ deep merge for spec patches
+
+const ALLOWED_DESIRED = new Set(["active", "paused", "deleted"]);
+
+function httpError(statusCode, message, details = null) {
+    const e = new Error(message);
+    e.statusCode = statusCode;
+    if (details) e.details = details;
+    return e;
+}
 
 function randPassword() {
     return (
@@ -17,8 +29,36 @@ function randPassword() {
 }
 
 function defaultHostname({ projectId, name }) {
-    // v1 local-friendly (you can swap later to real domains)
     return `${name}.${projectId}.local`.toLowerCase().replace(/[^a-z0-9.-]/g, "-");
+}
+
+function isPlainObject(v) {
+    return Boolean(v) && typeof v === "object" && !Array.isArray(v);
+}
+
+function pickPatch(patch) {
+    const out = {};
+
+    if (typeof patch?.name === "string") out.name = patch.name;
+
+    if (patch?.labels !== undefined) {
+        if (patch.labels === null) out.labels = null;
+        else if (!isPlainObject(patch.labels)) throw httpError(400, "labels must be an object or null");
+        else out.labels = patch.labels;
+    }
+
+    if (patch?.desiredState !== undefined) {
+        const ds = String(patch.desiredState);
+        if (!ALLOWED_DESIRED.has(ds)) throw httpError(400, `Invalid desiredState: ${ds}`);
+        out.desiredState = ds;
+    }
+
+    if (patch?.spec !== undefined) {
+        if (!isPlainObject(patch.spec)) throw httpError(400, "spec must be an object");
+        out.spec = patch.spec;
+    }
+
+    return out;
 }
 
 export function resourcesService(db) {
@@ -29,6 +69,7 @@ export function resourcesService(db) {
     const secrets = secretsRepo(db);
 
     async function enqueueResourceChanged(resourceId, reason, actorUserId = null) {
+        // make enqueue idempotent even if insert collides
         await outbox.enqueue({
             eventId: newId("evt"),
             type: "RESOURCE_CHANGED",
@@ -55,8 +96,7 @@ export function resourcesService(db) {
         });
     }
 
-    async function maybeCreatePostgresPasswordSecret({ createdBy, projectId, resourceId, spec }) {
-        // If user already supplied passwordSecretRef -> do nothing
+    async function maybeCreatePostgresPasswordSecret({ createdBy, resourceId, spec }) {
         if (spec.passwordSecretRef) return spec;
 
         const passwordPlain = randPassword();
@@ -85,11 +125,12 @@ export function resourcesService(db) {
         const exposure = rootResource.spec?.network?.exposure || "internal";
         const port = rootResource.spec?.network?.internalPort || null;
 
-        // only auto-route for public + has internalPort
         if (exposure !== "public" || !port) return null;
 
         const routeResourceId = newId("res");
         const hostname = defaultHostname({ projectId: rootResource.projectId, name: rootResource.name });
+
+        const createdAt = now();
 
         const routeDoc = {
             resourceId: routeResourceId,
@@ -104,11 +145,11 @@ export function resourcesService(db) {
                 protocol: "http"
             },
             desiredState: "active",
-            labels: { "sensualbyte.platformManaged": "true" },
+            labels: { "sensual.platformManaged": "true" },
             generation: 1,
             createdBy,
-            createdAt: now(),
-            updatedAt: now(),
+            createdAt,
+            updatedAt: createdAt,
             parentResourceId: rootResource.resourceId,
             rootResourceId: rootResource.resourceId
         };
@@ -123,26 +164,15 @@ export function resourcesService(db) {
     return {
         async createFromCatalog({ projectId, catalogId, name, overrides, createdBy }) {
             const item = await catalog.getByCatalogId(catalogId);
-            if (!item) {
-                const e = new Error(`Unknown catalogId: ${catalogId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!item) throw httpError(404, `Unknown catalogId: ${catalogId}`);
 
             const rootResourceId = newId("res");
             const createdAt = now();
 
-            // build spec
             let spec = applyOfferingDefaults(item, overrides || {});
 
-            // If postgres, generate + store password secret now (API side)
             if (item.kind === "postgres") {
-                spec = await maybeCreatePostgresPasswordSecret({
-                    createdBy,
-                    projectId,
-                    resourceId: rootResourceId,
-                    spec
-                });
+                spec = await maybeCreatePostgresPasswordSecret({ createdBy, resourceId: rootResourceId, spec });
             }
 
             const rootDoc = {
@@ -152,7 +182,7 @@ export function resourcesService(db) {
                 name,
                 spec,
                 desiredState: "active",
-                labels: null,
+                labels: {},
                 generation: 1,
                 createdBy,
                 createdAt,
@@ -165,7 +195,6 @@ export function resourcesService(db) {
             await initStatus(rootResourceId);
             await enqueueResourceChanged(rootResourceId, "create", createdBy);
 
-            // auto-create http_route child for public compute
             const childRoute = await maybeCreatePublicRouteChild({ createdBy, rootResource: rootDoc });
 
             return { resource: rootDoc, createdChildren: childRoute ? [childRoute] : [] };
@@ -173,11 +202,7 @@ export function resourcesService(db) {
 
         async get(resourceId) {
             const r = await resources.getByResourceId(resourceId);
-            if (!r) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!r) throw httpError(404, `Resource not found: ${resourceId}`);
             const s = await status.get(resourceId);
             return { resource: r, status: s };
         },
@@ -188,14 +213,17 @@ export function resourcesService(db) {
 
         async patch(resourceId, patch, actorUserId) {
             const existing = await resources.getByResourceId(resourceId);
-            if (!existing) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
+            if (!existing) throw httpError(404, `Resource not found: ${resourceId}`);
+
+            const safe = pickPatch(patch);
+
+            // ✅ deep merge spec updates
+            if (safe.spec) {
+                safe.spec = deepMerge(existing.spec || {}, safe.spec || {});
             }
 
             const updated = await resources.update(resourceId, {
-                ...patch,
+                ...safe,
                 generation: (existing.generation || 0) + 1,
                 updatedAt: now()
             });
@@ -206,11 +234,7 @@ export function resourcesService(db) {
 
         async remove(resourceId, actorUserId) {
             const existing = await resources.getByResourceId(resourceId);
-            if (!existing) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!existing) throw httpError(404, `Resource not found: ${resourceId}`);
 
             const updated = await resources.update(resourceId, {
                 desiredState: "deleted",
