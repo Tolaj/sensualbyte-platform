@@ -1,0 +1,23 @@
+{
+    "type": "object",
+    "properties": {
+        "bucketName": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "versioning": {
+            "type": "boolean"
+        },
+        "publicRead": {
+            "type": "boolean"
+        },
+        "quotaMb": {
+            "type": [
+                "number",
+                "null"
+            ]
+        }
+    }
+}

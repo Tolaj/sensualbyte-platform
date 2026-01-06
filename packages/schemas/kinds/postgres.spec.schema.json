@@ -1,0 +1,38 @@
+{
+    "type": "object",
+    "properties": {
+        "version": {
+            "type": "string"
+        },
+        "dbName": {
+            "type": "string"
+        },
+        "username": {
+            "type": "string"
+        },
+        "passwordSecretRef": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "storageMb": {
+            "type": "number"
+        },
+        "backups": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "retentionDays": {
+                    "type": "number"
+                }
+            }
+        }
+    },
+    "required": [
+        "dbName",
+        "username"
+    ]
+}

@@ -1,133 +1,77 @@
-import { computeLabels } from "./labels.js";
 import { ensureImage } from "./images.js";
+import { computeLabels } from "./labels.js";
 
-function containerName(resourceId) {
-    return `sb_compute_${resourceId}`;
-}
+function containerName(resourceId) { return `sb_compute_${resourceId}`; }
+function envList(envObj) { return Object.entries(envObj || {}).map(([k, v]) => `${k}=${String(v)}`); }
 
-function buildEnv(envObj) {
-    const env = envObj || {};
-    return Object.entries(env).map(([k, v]) => `${k}=${String(v)}`);
-}
-
-function buildPortBindings(spec) {
-    // For SSH box / iaas: expose container internalPort (default 2222) -> random host port
-    // For paas: we generally don't publish ports directly (nginx route will later), but ok to omit
-    const network = spec.network || {};
+function portConfig(spec) {
     const mode = spec.mode;
-
-    if (mode === "iaas") {
-        const internalPort = network.internalPort || 2222;
+    const internalPort = spec.network?.internalPort || (mode === "iaas" ? 2222 : null);
+    if (mode === "iaas" && internalPort) {
         const key = `${internalPort}/tcp`;
-        return {
-            ExposedPorts: { [key]: {} },
-            HostConfig: {
-                PortBindings: {
-                    [key]: [{ HostPort: "" }] // Docker assigns a random available host port
-                }
-            }
-        };
+        return { ExposedPorts: { [key]: {} }, HostConfig: { PortBindings: { [key]: [{ HostPort: "" }] } } };
     }
-
     return { ExposedPorts: {}, HostConfig: {} };
 }
 
 export async function ensureCompute(docker, resource) {
     const spec = resource.spec || {};
-    if ((spec.implementation || "docker") !== "docker") {
-        throw new Error(`compute.spec.implementation=${spec.implementation} not supported in v1`);
-    }
+    if ((spec.implementation || "docker") !== "docker") throw new Error("only docker v1");
 
     const name = containerName(resource.resourceId);
 
-    // find existing
-    let container = null;
-    try {
-        container = docker.getContainer(name);
-        await container.inspect(); // will throw if not found
-    } catch (_) {
-        container = null;
-    }
+    let c = null;
+    try { c = docker.getContainer(name); await c.inspect(); } catch (_) { c = null; }
 
-    // ensure image exists locally
     await ensureImage(docker, spec.image);
 
-    if (!container) {
-        const portCfg = buildPortBindings(spec);
-
-        const created = await docker.createContainer({
+    if (!c) {
+        const ports = portConfig(spec);
+        c = await docker.createContainer({
             name,
             Image: spec.image,
-            Env: buildEnv(spec.env),
+            Env: envList(spec.env),
             Labels: computeLabels(resource),
-            // NOTE: mounts/volumes will be added in Step 4/5 with volume controller
-            ExposedPorts: portCfg.ExposedPorts,
-            HostConfig: {
-                ...portCfg.HostConfig
-            }
+            ExposedPorts: ports.ExposedPorts,
+            HostConfig: { ...ports.HostConfig }
         });
-
-        container = created;
     }
-
-    return container;
+    return c;
 }
 
 export async function startIfNeeded(container) {
-    const info = await container.inspect();
-    if (!info.State.Running) {
-        await container.start();
-    }
+    const i = await container.inspect();
+    if (!i.State?.Running) await container.start();
     return container.inspect();
 }
 
 export async function stopIfNeeded(container) {
-    const info = await container.inspect();
-    if (info.State.Running) {
-        await container.stop({ t: 10 });
-    }
+    const i = await container.inspect();
+    if (i.State?.Running) await container.stop({ t: 10 });
     return container.inspect();
 }
 
-export async function removeIfExists(docker, resourceId) {
+export async function removeComputeIfExists(docker, resourceId) {
     const name = containerName(resourceId);
     try {
         const c = docker.getContainer(name);
-        const info = await c.inspect();
-        if (info.State.Running) {
-            await c.stop({ t: 10 });
-        }
+        const i = await c.inspect();
+        if (i.State?.Running) await c.stop({ t: 10 });
         await c.remove({ force: true });
         return { removed: true };
-    } catch (_) {
-        return { removed: false };
-    }
-}
-
-export async function inspectCompute(container) {
-    return container.inspect();
+    } catch (_) { return { removed: false }; }
 }
 
 export function extractObserved(inspect) {
-    const name = inspect.Name?.replace(/^\//, "") || null;
+    const containerName = inspect.Name?.replace(/^\//, "") || null;
     const containerId = inspect.Id || null;
     const state = inspect.State?.Status || "unknown";
     const running = Boolean(inspect.State?.Running);
 
-    // Best-effort IP (bridge network)
     const networks = inspect.NetworkSettings?.Networks || {};
     const firstNet = Object.values(networks)[0];
     const ip = firstNet?.IPAddress || null;
 
-    // Published ports (useful for SSH box)
     const ports = inspect.NetworkSettings?.Ports || {};
-
-    return {
-        containerId,
-        containerName: name,
-        state,
-        running,
-        ip,
-        ports
-    };
+    return { containerId, containerName, state, running, ip, ports };
 }

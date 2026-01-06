@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-set -e
-
-# TODO: implement
+set -euo pipefail
+echo "Bootstrap: install workspaces"
+npm install

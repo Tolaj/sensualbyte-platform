@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-set -e
-
-# TODO: implement
+set -euo pipefail
+echo "Run DB setup"
+npm run db:setup

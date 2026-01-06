@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "dependencies": {
-        "dockerode": "^4.0.2"
+        "dockerode": "^4.0.2",
+        "minio": "^8.0.5"
     }
 }

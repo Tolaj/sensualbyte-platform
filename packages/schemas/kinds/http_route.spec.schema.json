@@ -1,0 +1,40 @@
+{
+    "type": "object",
+    "properties": {
+        "hostname": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "pathPrefix": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "targetResourceId": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "targetPort": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
+        "protocol": {
+            "type": "string",
+            "enum": [
+                "http"
+            ]
+        }
+    },
+    "required": [
+        "hostname",
+        "targetResourceId",
+        "targetPort"
+    ]
+}

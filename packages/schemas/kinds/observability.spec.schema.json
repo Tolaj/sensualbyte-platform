@@ -1,0 +1,14 @@
+{
+    "type": "object",
+    "properties": {
+        "logs": {
+            "type": "object"
+        },
+        "metrics": {
+            "type": "object"
+        },
+        "targets": {
+            "type": "array"
+        }
+    }
+}

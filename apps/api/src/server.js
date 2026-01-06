@@ -1,8 +1,8 @@
-import "dotenv/config";
+import "../../../packages/shared/loadEnv.js";
 import { createApp } from "./app.js";
 import { getMongoDb } from "./db/mongo.js";
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.API_PORT || 3001);
 
 async function main() {
     const db = await getMongoDb();

@@ -1,0 +1,92 @@
+{
+    "type": "object",
+    "properties": {
+        "implementation": {
+            "type": "string",
+            "enum": [
+                "docker",
+                "vm"
+            ]
+        },
+        "mode": {
+            "type": "string",
+            "enum": [
+                "paas",
+                "iaas"
+            ]
+        },
+        "image": {
+            "type": "string"
+        },
+        "resources": {
+            "type": "object",
+            "properties": {
+                "cpu": {
+                    "type": "number"
+                },
+                "memoryMb": {
+                    "type": "number"
+                }
+            }
+        },
+        "network": {
+            "type": "object",
+            "properties": {
+                "exposure": {
+                    "type": "string",
+                    "enum": [
+                        "internal",
+                        "public"
+                    ]
+                },
+                "internalPort": {
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "paas": {
+            "type": "object",
+            "properties": {
+                "healthPath": {
+                    "type": "string"
+                },
+                "desiredReplicas": {
+                    "type": "number"
+                }
+            }
+        },
+        "iaas": {
+            "type": "object",
+            "properties": {
+                "sshUser": {
+                    "type": "string"
+                },
+                "sshKeySecretRef": {
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                }
+            }
+        },
+        "env": {
+            "type": "object"
+        },
+        "storage": {
+            "type": "object",
+            "properties": {
+                "mounts": {
+                    "type": "array"
+                }
+            }
+        }
+    },
+    "required": [
+        "implementation",
+        "mode",
+        "image"
+    ]
+}

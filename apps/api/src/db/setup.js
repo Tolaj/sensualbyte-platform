@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../../../../packages/shared/loadEnv.js";
 import { getMongoDb, closeMongo } from "./mongo.js";
 import { applyCollectionValidators } from "./validators.js";
 import { ensureIndexes } from "./indexes.js";

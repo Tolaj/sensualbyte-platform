@@ -1,22 +1,26 @@
-export function createOutboxPoller({ outboxRepo, resourcesRepo, statusRepo, obsCache }) {
+import { dispatch } from "./dispatcher.js";
+import { reconcileWrapper } from "./common/reconcile.js";
+
+export function createOutboxPoller({ outboxRepo, resourcesRepo, statusRepo, obsCache, secretsRepo }) {
     return {
         async tick() {
             const evt = await outboxRepo.claimNext();
             if (!evt) return false;
 
-            const resourceId = evt.resourceId;
-            const resource = await resourcesRepo.getByResourceId(resourceId);
+            try {
+                const resource = await resourcesRepo.getByResourceId(evt.resourceId);
+                if (!resource) {
+                    await outboxRepo.markDone(evt.eventId);
+                    return true;
+                }
 
-            if (!resource) {
-                // resource deleted or missing; nothing to do
+                await reconcileWrapper(dispatch, { resource, statusRepo, obsCache, secretsRepo });
+                await outboxRepo.markDone(evt.eventId);
                 return true;
+            } catch (err) {
+                await outboxRepo.markFailed(evt.eventId, err);
+                throw err;
             }
-
-            // dispatch reconcile
-            const { dispatch } = await import("./dispatcher.js");
-            await dispatch({ resource, statusRepo, obsCache });
-
-            return true;
         }
     };
 }

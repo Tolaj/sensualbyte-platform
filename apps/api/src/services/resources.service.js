@@ -1,14 +1,10 @@
 import { newId } from "../utils/ids.js";
-import { deepMerge } from "./catalog.service.js";
-
+import { now } from "../utils/time.js";
 import { catalogItemsRepo } from "../repos/catalogItems.repo.js";
 import { resourcesRepo } from "../repos/resources.repo.js";
 import { resourceStatusRepo } from "../repos/resourceStatus.repo.js";
 import { eventsOutboxRepo } from "../repos/eventsOutbox.repo.js";
-
-function now() {
-    return new Date();
-}
+import { applyOfferingDefaults } from "./catalog.service.js";
 
 export function resourcesService(db) {
     const catalog = catalogItemsRepo(db);
@@ -17,38 +13,22 @@ export function resourcesService(db) {
     const outbox = eventsOutboxRepo(db);
 
     return {
-        /**
-         * Create resource from an offering (catalogId) + user overrides.
-         * This is your main "Create Service" flow.
-         */
-        async createFromCatalog({ projectId, catalogId, name, overrides = {}, createdBy }) {
+        async createFromCatalog({ projectId, catalogId, name, overrides, createdBy }) {
             const item = await catalog.getByCatalogId(catalogId);
-            if (!item) {
-                const e = new Error(`Unknown catalogId: ${catalogId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!item) { const e = new Error(`Unknown catalogId: ${catalogId}`); e.statusCode = 404; throw e; }
 
             const resourceId = newId("res");
             const createdAt = now();
-
-            // Apply defaults, then overlay user overrides
-            const spec = deepMerge(item.defaults || {}, overrides || {});
+            const spec = applyOfferingDefaults(item, overrides);
 
             const doc = {
-                resourceId,
-                projectId,
-                kind: item.kind,
-                name,
-                spec,
+                resourceId, projectId, kind: item.kind, name, spec,
                 desiredState: "active",
                 labels: null,
                 generation: 1,
                 createdBy,
                 createdAt,
                 updatedAt: createdAt,
-
-                // for future composition (optional)
                 parentResourceId: null,
                 rootResourceId: null
             };
@@ -70,8 +50,12 @@ export function resourcesService(db) {
                 resourceId,
                 payload: { reason: "create" },
                 processed: false,
-                createdAt: now(),
-                processedAt: null
+                processedAt: null,
+                lock: null,
+                attempts: 0,
+                lastError: null,
+                updatedAt: now(),
+                createdAt: now()
             });
 
             return { resource: doc };
@@ -79,35 +63,20 @@ export function resourcesService(db) {
 
         async get(resourceId) {
             const r = await resources.getByResourceId(resourceId);
-            if (!r) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!r) { const e = new Error(`Resource not found: ${resourceId}`); e.statusCode = 404; throw e; }
             const s = await status.get(resourceId);
             return { resource: r, status: s };
         },
 
         async list({ projectId, kind }) {
-            const rows = await resources.list({ projectId, kind });
-            return { resources: rows };
+            return { resources: await resources.list({ projectId, kind }) };
         },
 
-        async update(resourceId, patch, actorUserId) {
+        async patch(resourceId, patch, actorUserId) {
             const existing = await resources.getByResourceId(resourceId);
-            if (!existing) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!existing) { const e = new Error(`Resource not found: ${resourceId}`); e.statusCode = 404; throw e; }
 
-            const next = {
-                ...patch,
-                generation: (existing.generation || 0) + 1,
-                updatedAt: now()
-            };
-
-            const updated = await resources.update(resourceId, next);
+            const updated = await resources.update(resourceId, { ...patch, generation: (existing.generation || 0) + 1, updatedAt: now() });
 
             await outbox.enqueue({
                 eventId: newId("evt"),
@@ -116,34 +85,24 @@ export function resourcesService(db) {
                 resourceId,
                 payload: { reason: "update", actorUserId },
                 processed: false,
-                createdAt: now(),
-                processedAt: null
+                processedAt: null,
+                lock: null,
+                attempts: 0,
+                lastError: null,
+                updatedAt: now(),
+                createdAt: now()
             });
 
-            // status stays last-known until worker updates it
             return { resource: updated };
         },
 
-        async delete(resourceId, actorUserId) {
+        async remove(resourceId, actorUserId) {
             const existing = await resources.getByResourceId(resourceId);
-            if (!existing) {
-                const e = new Error(`Resource not found: ${resourceId}`);
-                e.statusCode = 404;
-                throw e;
-            }
+            if (!existing) { const e = new Error(`Resource not found: ${resourceId}`); e.statusCode = 404; throw e; }
 
-            const updated = await resources.update(resourceId, {
-                desiredState: "deleted",
-                generation: (existing.generation || 0) + 1,
-                updatedAt: now()
-            });
+            const updated = await resources.update(resourceId, { desiredState: "deleted", generation: (existing.generation || 0) + 1, updatedAt: now() });
 
-            await status.upsert(resourceId, {
-                observedGeneration: existing.generation || 0,
-                state: "deleting",
-                message: "Deletion requested",
-                lastUpdatedAt: now()
-            });
+            await status.upsert(resourceId, { state: "deleting", message: "Deletion requested", lastUpdatedAt: now() });
 
             await outbox.enqueue({
                 eventId: newId("evt"),
@@ -152,8 +111,12 @@ export function resourcesService(db) {
                 resourceId,
                 payload: { reason: "delete", actorUserId },
                 processed: false,
-                createdAt: now(),
-                processedAt: null
+                processedAt: null,
+                lock: null,
+                attempts: 0,
+                lastError: null,
+                updatedAt: now(),
+                createdAt: now()
             });
 
             return { resource: updated };

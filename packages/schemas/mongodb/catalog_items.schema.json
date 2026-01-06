@@ -3,39 +3,65 @@
   "validator": {
     "$jsonSchema": {
       "bsonType": "object",
-      "required": ["catalogId", "categoryId", "name", "kind", "defaults", "createdAt", "updatedAt"],
+      "required": [
+        "catalogId",
+        "categoryId",
+        "name",
+        "kind",
+        "defaults",
+        "createdAt",
+        "updatedAt"
+      ],
       "properties": {
         "_id": {},
-        "catalogId": { "bsonType": "string" },
-        "categoryId": { "bsonType": "string" },
-        "name": { "bsonType": "string" },
-        "description": { "bsonType": ["string", "null"] },
-
+        "catalogId": {
+          "bsonType": "string"
+        },
+        "categoryId": {
+          "bsonType": "string"
+        },
+        "name": {
+          "bsonType": "string"
+        },
+        "description": {
+          "bsonType": [
+            "string",
+            "null"
+          ]
+        },
         "kind": {
           "bsonType": "string",
-          "enum": ["compute", "bucket", "volume", "http_route", "postgres", "observability", "mqtt"]
+          "enum": [
+            "compute",
+            "bucket",
+            "volume",
+            "http_route",
+            "postgres",
+            "observability",
+            "mqtt"
+          ]
         },
-
-        "defaults": { "bsonType": "object" },
-
-        "inputSchema": { "bsonType": ["object", "null"] },
-
+        "defaults": {
+          "bsonType": "object"
+        },
+        "inputSchema": {
+          "bsonType": [
+            "object",
+            "null"
+          ]
+        },
         "components": {
-          "bsonType": ["array", "null"],
-          "items": {
-            "bsonType": "object",
-            "required": ["ref", "kind", "defaults"],
-            "properties": {
-              "ref": { "bsonType": "string" },
-              "kind": { "bsonType": "string" },
-              "defaults": { "bsonType": "object" },
-              "attachToRef": { "bsonType": ["string", "null"] }
-            }
-          }
+          "bsonType": [
+            "array",
+            "null"
+          ]
         },
-
-        "createdAt": { "bsonType": "date" },
-        "updatedAt": { "bsonType": "date" }
+        "createdAt": {
+          "bsonType": "date"
+        },
+        "updatedAt": {
+          "bsonType": "date"
+        }
       }
     }
   }

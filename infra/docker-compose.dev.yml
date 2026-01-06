@@ -1,0 +1,45 @@
+services:
+  mongo:
+    env_file:
+      - ../.env
+    image: mongo:7
+    container_name: sb-mongo
+    ports: ["27018:27017"]
+    volumes:
+      - sb_mongo:/data/db
+
+  redis:
+    env_file:
+      - ../.env
+    image: redis:7-alpine
+    container_name: sb-redis
+    ports:
+      - "6379:6379"
+
+  minio:
+    env_file:
+      - ../.env
+    image: minio/minio:latest
+    container_name: sb-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - sb_minio:/data
+
+  nginx:
+    image: nginx:alpine
+    container_name: sb-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:rw
+    restart: unless-stopped
+
+volumes:
+  sb_minio:
+  sb_mongo:

@@ -1,0 +1,12 @@
+{
+    "type": "object",
+    "properties": {
+        "engine": {
+            "type": "string",
+            "enum": [
+                "mosquitto",
+                "emqx"
+            ]
+        }
+    }
+}

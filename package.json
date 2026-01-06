@@ -1,11 +1,19 @@
 {
-  "name": "sensual-platform",
+  "name": "sensualbyte-platform",
   "private": true,
+  "type": "module",
   "workspaces": [
-    "apps/*",
-    "workers/*",
-    "provisioner",
-    "packages/*"
+    "apps/api",
+    "workers/controllers",
+    "provisioner"
   ],
-  "version": "0.0.1"
+  "scripts": {
+    "dev:api": "npm -w apps/api run dev",
+    "dev:worker": "npm -w workers/controllers run dev",
+    "db:setup": "npm -w apps/api run db:setup",
+    "db:seed": "npm -w apps/api run db:seed"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  }
 }

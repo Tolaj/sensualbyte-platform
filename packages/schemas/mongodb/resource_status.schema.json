@@ -3,15 +3,44 @@
   "validator": {
     "$jsonSchema": {
       "bsonType": "object",
-      "required": ["resourceId", "observedGeneration", "state", "lastUpdatedAt"],
+      "required": [
+        "resourceId",
+        "observedGeneration",
+        "state",
+        "lastUpdatedAt"
+      ],
       "properties": {
         "_id": {},
-        "resourceId": { "bsonType": "string" },
-        "observedGeneration": { "bsonType": "int" },
-        "state": { "bsonType": "string", "enum": ["creating", "ready", "error", "deleting"] },
-        "message": { "bsonType": ["string", "null"] },
-        "details": { "bsonType": ["object", "null"] },
-        "lastUpdatedAt": { "bsonType": "date" }
+        "resourceId": {
+          "bsonType": "string"
+        },
+        "observedGeneration": {
+          "bsonType": "int"
+        },
+        "state": {
+          "bsonType": "string",
+          "enum": [
+            "creating",
+            "ready",
+            "error",
+            "deleting"
+          ]
+        },
+        "message": {
+          "bsonType": [
+            "string",
+            "null"
+          ]
+        },
+        "details": {
+          "bsonType": [
+            "object",
+            "null"
+          ]
+        },
+        "lastUpdatedAt": {
+          "bsonType": "date"
+        }
       }
     }
   }

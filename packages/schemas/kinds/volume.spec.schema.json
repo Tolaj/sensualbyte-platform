@@ -1,0 +1,17 @@
+{
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "sizeMb": {
+            "type": [
+                "number",
+                "null"
+            ]
+        }
+    }
+}

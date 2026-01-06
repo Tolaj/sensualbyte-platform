@@ -3,31 +3,82 @@
   "validator": {
     "$jsonSchema": {
       "bsonType": "object",
-      "required": ["resourceId", "projectId", "kind", "name", "spec", "desiredState", "generation", "createdBy", "createdAt", "updatedAt"],
+      "required": [
+        "resourceId",
+        "projectId",
+        "kind",
+        "name",
+        "spec",
+        "desiredState",
+        "generation",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ],
       "properties": {
         "_id": {},
-        "resourceId": { "bsonType": "string" },
-        "projectId": { "bsonType": "string" },
-
-        "parentResourceId": { "bsonType": ["string", "null"] },
-        "rootResourceId": { "bsonType": ["string", "null"] },
-
+        "resourceId": {
+          "bsonType": "string"
+        },
+        "projectId": {
+          "bsonType": "string"
+        },
+        "parentResourceId": {
+          "bsonType": [
+            "string",
+            "null"
+          ]
+        },
+        "rootResourceId": {
+          "bsonType": [
+            "string",
+            "null"
+          ]
+        },
         "kind": {
           "bsonType": "string",
-          "enum": ["compute", "bucket", "volume", "http_route", "postgres", "observability", "mqtt"]
+          "enum": [
+            "compute",
+            "bucket",
+            "volume",
+            "http_route",
+            "postgres",
+            "observability",
+            "mqtt"
+          ]
         },
-
-        "name": { "bsonType": "string" },
-        "spec": { "bsonType": "object" },
-
-        "desiredState": { "bsonType": "string", "enum": ["active", "paused", "deleted"] },
-
-        "labels": { "bsonType": ["object", "null"] },
-
-        "generation": { "bsonType": "int" },
-        "createdBy": { "bsonType": "string" },
-        "createdAt": { "bsonType": "date" },
-        "updatedAt": { "bsonType": "date" }
+        "name": {
+          "bsonType": "string"
+        },
+        "spec": {
+          "bsonType": "object"
+        },
+        "desiredState": {
+          "bsonType": "string",
+          "enum": [
+            "active",
+            "paused",
+            "deleted"
+          ]
+        },
+        "labels": {
+          "bsonType": [
+            "object",
+            "null"
+          ]
+        },
+        "generation": {
+          "bsonType": "int"
+        },
+        "createdBy": {
+          "bsonType": "string"
+        },
+        "createdAt": {
+          "bsonType": "date"
+        },
+        "updatedAt": {
+          "bsonType": "date"
+        }
       }
     }
   }
