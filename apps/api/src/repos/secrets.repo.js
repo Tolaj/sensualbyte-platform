@@ -1,7 +1,15 @@
 export function secretsRepo(db) {
     const col = db.collection("secrets");
     return {
-        get: (secretId) => col.findOne({ secretId }),
-        listByScope: (scopeType, scopeId) => col.find({ scopeType, scopeId }).sort({ createdAt: -1 }).toArray()
+        async create(doc) {
+            await col.insertOne(doc);
+            return doc;
+        },
+        async get(secretId) {
+            return col.findOne({ secretId });
+        },
+        async listByScope(scopeType, scopeId) {
+            return col.find({ scopeType, scopeId }).sort({ createdAt: -1 }).toArray();
+        }
     };
 }

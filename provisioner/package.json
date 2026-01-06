@@ -2,6 +2,18 @@
     "name": "@sensualbyte/provisioner",
     "private": true,
     "type": "module",
+    "version": "0.1.0",
+    "main": "src/index.js",
+    "exports": {
+        ".": "./src/index.js"
+    },
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "test": "node --test test",
+        "test:watch": "node --test --watch test"
+    },
     "dependencies": {
         "dockerode": "^4.0.2",
         "minio": "^8.0.5"
