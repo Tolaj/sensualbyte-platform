@@ -1,9 +1,14 @@
-export async function reconcileNotImplemented({ resource, statusRepo }) {
-    await statusRepo.upsert(resource.resourceId, {
+import { setStatus } from "../common/status.js";
+
+export async function reconcileNotImplemented({ resource, statusRepo }, opts = {}) {
+    const reason = opts.reason || `Kind not implemented yet: ${resource.kind}`;
+
+    await setStatus(statusRepo, resource.resourceId, {
         observedGeneration: resource.generation || 0,
         state: "error",
-        message: `Kind not implemented yet: ${resource.kind}`,
-        details: { kind: resource.kind },
-        lastUpdatedAt: new Date()
+        message: reason,
+        details: { kind: resource.kind }
     });
+
+    return { statusApplied: true };
 }

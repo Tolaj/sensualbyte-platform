@@ -5,6 +5,7 @@ import { reconcilePostgres } from "./kinds/postgres.controller.js";
 import { reconcileHttpRoute } from "./kinds/httpRoute.controller.js";
 import { reconcileObservability } from "./kinds/observability.controller.js";
 import { reconcileMqtt } from "./kinds/mqtt.controller.js";
+import { reconcileNotImplemented } from "./kinds/notImplemented.controller.js";
 
 export async function dispatch(ctx) {
     switch (ctx.resource.kind) {
@@ -16,6 +17,6 @@ export async function dispatch(ctx) {
         case "observability": return reconcileObservability(ctx);
         case "mqtt": return reconcileMqtt(ctx);
         default:
-            throw new Error(`Unknown kind: ${ctx.resource.kind}`);
+            return reconcileNotImplemented(ctx, { reason: `Unknown kind: ${ctx.resource.kind}` });
     }
 }

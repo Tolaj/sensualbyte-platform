@@ -1,4 +1,3 @@
-// provisioner/src/adapters/mosquitto.js
 import { ensureImage } from "../drivers/docker/images.js";
 import { ensureVolume } from "../drivers/docker/volumes.js";
 import { ensureNetwork } from "../drivers/docker/networks.js";
@@ -12,7 +11,7 @@ function containerName(resourceId) {
 function mqttLabels(resource) {
     return {
         ...baseLabels(resource),
-        "sensualbyte.mqtt.engine": "mosquitto"
+        "sensual.mqtt.engine": "mosquitto"
     };
 }
 
@@ -27,13 +26,20 @@ async function inspectIfExists(docker, name) {
     }
 }
 
+function buildPorts(spec) {
+    // internal container port (default 1883)
+    const internalPort = Number(spec?.ports?.mqtt || 1883);
+    const key = `${internalPort}/tcp`;
+    return { internalPort, key };
+}
+
 /**
- * ensureMosquitto:
+ * ensureMosquitto
  * spec example:
  * {
  *   version: "2",
  *   network: { name: "sensualbyte_default" },
- *   ports: { mqtt: 1883 },         // internal container port
+ *   ports: { mqtt: 1883 },
  *   persistence: true
  * }
  */
@@ -45,36 +51,38 @@ export async function ensureMosquitto(docker, resource) {
     const name = containerName(resource.resourceId);
 
     const image = `eclipse-mosquitto:${spec.version || "2"}`;
-
     await ensureImage(docker, image);
 
     const netName = spec.network?.name || "sensualbyte_default";
     await ensureNetwork(docker, netName, {
-        "sensualbyte.kind": "network",
-        "sensualbyte.network": "bridge"
+        "sensual.kind": "network",
+        "sensual.network": "bridge"
     });
 
     const existing = await inspectIfExists(docker, name);
     if (existing.container) return existing.container;
 
+    const { key } = buildPorts(spec);
+
+    const persistence = spec.persistence !== false; // default true
     const dataVol = `sb_mqttdata_${resource.resourceId}`;
     const logVol = `sb_mqttlog_${resource.resourceId}`;
 
-    // persistence volumes (safe even if not used)
-    await ensureVolume(docker, dataVol, {
-        "sensualbyte.kind": "volume",
-        "sensualbyte.resourceId": String(resource.resourceId),
-        "sensualbyte.usage": "mqtt_data"
-    });
+    const binds = [];
+    if (persistence) {
+        await ensureVolume(docker, dataVol, {
+            "sensual.kind": "volume",
+            "sensual.resourceId": String(resource.resourceId),
+            "sensual.usage": "mqtt_data"
+        });
+        await ensureVolume(docker, logVol, {
+            "sensual.kind": "volume",
+            "sensual.resourceId": String(resource.resourceId),
+            "sensual.usage": "mqtt_log"
+        });
 
-    await ensureVolume(docker, logVol, {
-        "sensualbyte.kind": "volume",
-        "sensualbyte.resourceId": String(resource.resourceId),
-        "sensualbyte.usage": "mqtt_log"
-    });
-
-    const internalPort = Number(spec.ports?.mqtt || 1883);
-    const key = `${internalPort}/tcp`;
+        binds.push(`${dataVol}:/mosquitto/data`, `${logVol}:/mosquitto/log`);
+    }
 
     try {
         const c = await docker.createContainer({
@@ -84,11 +92,8 @@ export async function ensureMosquitto(docker, resource) {
             ExposedPorts: { [key]: {} },
             HostConfig: {
                 RestartPolicy: { Name: "unless-stopped" },
-                Binds: [
-                    `${dataVol}:/mosquitto/data`,
-                    `${logVol}:/mosquitto/log`
-                ],
-                PortBindings: { [key]: [{ HostPort: "" }] }
+                Binds: binds.length ? binds : undefined,
+                PortBindings: { [key]: [{ HostPort: "" }] } // random host port
             }
         });
 
@@ -107,4 +112,77 @@ export async function ensureMosquitto(docker, resource) {
     } catch (err) {
         throw wrapErr("Failed to create mosquitto container", err, { name, image, netName });
     }
+}
+
+export async function startMosquitto(container) {
+    try {
+        const i = await container.inspect();
+        if (!i.State?.Running) await container.start();
+        return await container.inspect();
+    } catch (err) {
+        throw wrapErr("Failed to start mosquitto", err);
+    }
+}
+
+export async function stopMosquitto(container) {
+    try {
+        const i = await container.inspect();
+        if (i.State?.Running) await container.stop({ t: 10 });
+        return await container.inspect();
+    } catch (err) {
+        throw wrapErr("Failed to stop mosquitto", err);
+    }
+}
+
+export async function removeMosquittoIfExists(docker, resourceId, opts = {}) {
+    const name = containerName(resourceId);
+    const removeVolumes = Boolean(opts.removeVolumes);
+
+    try {
+        const c = docker.getContainer(name);
+        const i = await c.inspect();
+        if (i.State?.Running) await c.stop({ t: 10 });
+        await c.remove({ force: true });
+
+        // optional: remove persistence volumes (safe best-effort)
+        if (removeVolumes) {
+            const dataVol = docker.getVolume(`sb_mqttdata_${resourceId}`);
+            const logVol = docker.getVolume(`sb_mqttlog_${resourceId}`);
+            try { await dataVol.remove({ force: true }); } catch (_) { }
+            try { await logVol.remove({ force: true }); } catch (_) { }
+        }
+
+        return { removed: true };
+    } catch (err) {
+        if (isNotFoundDockerErr(err)) return { removed: false };
+        throw wrapErr("Failed to remove mosquitto", err, { name });
+    }
+}
+
+export function extractMosquittoObserved(inspect) {
+    const containerName = inspect.Name?.replace(/^\//, "") || null;
+    const containerId = inspect.Id || null;
+    const running = Boolean(inspect.State?.Running);
+
+    const networks = inspect.NetworkSettings?.Networks || {};
+    const firstNet = Object.values(networks)[0];
+    const ip = firstNet?.IPAddress || null;
+
+    // Find host port for 1883 or whatever internal port is exposed
+    const ports = inspect.NetworkSettings?.Ports || {};
+    let hostPort = null;
+    for (const [k, bindings] of Object.entries(ports)) {
+        if (!Array.isArray(bindings) || bindings.length === 0) continue;
+        // prefer mqtt default
+        if (k.endsWith("/tcp")) {
+            const b = bindings[0];
+            if (b?.HostPort) {
+                hostPort = Number(b.HostPort);
+                // if it's 1883/tcp, stop searching
+                if (k.startsWith("1883/")) break;
+            }
+        }
+    }
+
+    return { containerId, containerName, running, ip, hostPort, ports };
 }

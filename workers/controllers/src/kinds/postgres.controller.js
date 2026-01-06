@@ -3,11 +3,11 @@ import {
     ensurePostgresContainer,
     startPostgres,
     removePostgresIfExists,
-    extractPostgresObserved
-} from "../../../../provisioner/src/index.js";
+    extractPostgresObserved,
+    decryptString
+} from "@sensualbyte/provisioner";
 
 import { setStatus } from "../common/status.js";
-import { decryptString } from "../../../../packages/shared/crypto.js";
 
 export async function reconcilePostgres({ resource, statusRepo, obsCache, secretsRepo }) {
     const docker = getDocker();
@@ -34,7 +34,8 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
             observedAt: new Date().toISOString(),
             actual: { deleted: true }
         });
-        return;
+
+        return { statusApplied: true };
     }
 
     const secretId = resource.spec?.passwordSecretRef;
@@ -45,7 +46,7 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
             message: "Postgres missing spec.passwordSecretRef (API should have created it)",
             details: { spec: resource.spec }
         });
-        return;
+        return { statusApplied: true };
     }
 
     const secret = await secretsRepo.get(secretId);
@@ -56,10 +57,10 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
             message: "Password secret not found",
             details: { passwordSecretRef: secretId }
         });
-        return;
+        return { statusApplied: true };
     }
 
-    let passwordPlain = null;
+    let passwordPlain;
     try {
         passwordPlain = decryptString(secret.ciphertext, secret.encryptionMeta);
     } catch (e) {
@@ -69,11 +70,12 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
             message: "Failed to decrypt password secret",
             details: { error: String(e?.message || e) }
         });
-        return;
+        return { statusApplied: true };
     }
 
     await setStatus(statusRepo, resource.resourceId, {
-        state: "creating",
+        observedGeneration: resource.generation || 0,
+        state: "reconciling",
         message: "Reconciling postgres"
     });
 
@@ -99,4 +101,6 @@ export async function reconcilePostgres({ resource, statusRepo, obsCache, secret
         observedAt: new Date().toISOString(),
         actual: observed
     });
+
+    return { statusApplied: true };
 }

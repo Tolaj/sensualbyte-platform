@@ -8,5 +8,11 @@ export async function reconcileObservability({ resource, statusRepo, obsCache })
         details: { note: "Logs/metrics pipeline comes next" }
     });
 
-    await obsCache.set(resource.resourceId, { kind: "observability", observedAt: new Date().toISOString(), actual: { enabled: true } });
+    await obsCache.set(resource.resourceId, {
+        kind: "observability",
+        observedAt: new Date().toISOString(),
+        actual: { enabled: true }
+    });
+
+    return { statusApplied: true };
 }

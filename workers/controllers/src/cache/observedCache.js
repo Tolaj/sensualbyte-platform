@@ -13,6 +13,9 @@ export function observedCache(redis) {
         async get(resourceId) {
             const v = await redis.get(key(resourceId));
             return v ? JSON.parse(v) : null;
+        },
+        async del(resourceId) {
+            await redis.del(key(resourceId));
         }
     };
 }

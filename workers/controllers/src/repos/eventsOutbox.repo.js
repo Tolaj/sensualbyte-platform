@@ -1,15 +1,14 @@
 export function eventsOutboxRepo(db) {
     const col = db.collection("events_outbox");
+
     const workerId = process.env.WORKER_ID || "worker_1";
     const lockMs = Number(process.env.OUTBOX_LOCK_MS || 15000);
+    const maxAttempts = Number(process.env.OUTBOX_MAX_ATTEMPTS || 10);
 
     function normalizeResult(res) {
-        // supports both return shapes:
-        // 1) ModifyResult { value: doc|null }
-        // 2) doc|null
         if (!res) return null;
         if (typeof res === "object" && "value" in res) return res.value || null;
-        return res; // doc (or null)
+        return res;
     }
 
     return {
@@ -21,16 +20,26 @@ export function eventsOutboxRepo(db) {
                 {
                     processed: false,
                     $or: [
+                        { attempts: { $exists: false } },
+                        { attempts: null },
+                        { attempts: { $lt: maxAttempts } }
+                    ],
+                    $or: [
                         { lock: { $exists: false } },
                         { lock: null },
                         { "lock.lockExpiresAt": { $lte: now } }
                     ]
                 },
-                { $set: { lock: { lockedBy: workerId, lockedAt: now, lockExpiresAt }, updatedAt: now } },
+                {
+                    $set: {
+                        lock: { lockedBy: workerId, lockedAt: now, lockExpiresAt },
+                        updatedAt: now
+                    },
+                    $setOnInsert: { attempts: 0 }
+                },
                 {
                     sort: { createdAt: 1 },
                     returnDocument: "after",
-                    // force ModifyResult shape on newer drivers (safe even if ignored)
                     includeResultMetadata: true
                 }
             );
@@ -54,8 +63,8 @@ export function eventsOutboxRepo(db) {
                     $inc: { attempts: 1 },
                     $set: {
                         lastError: String(err?.message || err),
-                        // expire lock immediately so another tick can retry
-                        "lock.lockExpiresAt": now,
+                        // ✅ unlock immediately so next tick can retry
+                        lock: null,
                         updatedAt: now
                     }
                 }

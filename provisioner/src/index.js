@@ -1,10 +1,10 @@
 // Docker
-export {
+import {
     getDocker,
     pingDocker
 } from "./drivers/docker/client.js";
 
-export {
+import {
     ensureCompute,
     startIfNeeded as startCompute,
     stopIfNeeded as stopCompute,
@@ -12,26 +12,88 @@ export {
     extractObserved as extractComputeObserved
 } from "./drivers/docker/compute.js";
 
-export { ensureVolume, removeVolumeIfExists } from "./drivers/docker/volumes.js";
-export { ensureNetwork, removeNetworkIfExists } from "./drivers/docker/networks.js";
-export { execInContainer } from "./drivers/docker/exec.js";
+import { ensureVolume, removeVolumeIfExists } from "./drivers/docker/volumes.js";
+import { ensureNetwork, removeNetworkIfExists } from "./drivers/docker/networks.js";
+import { execInContainer } from "./drivers/docker/exec.js";
 
 // Adapters
-export { getMinio, ensureBucket, deleteBucket } from "./adapters/minio.js";
+import { getMinio, ensureBucket, deleteBucket } from "./adapters/minio.js";
 
-export {
+import {
     ensurePostgresContainer,
     startIfNeeded as startPostgres,
     removePostgresIfExists,
     extractObserved as extractPostgresObserved
 } from "./adapters/postgres.js";
 
-export { ensureMosquitto } from "./adapters/mosquitto.js";
+import {
+    ensureMosquitto,
+    startMosquitto,
+    stopMosquitto,
+    removeMosquittoIfExists,
+    extractMosquittoObserved
+} from "./adapters/mosquitto.js";
 
 // Gateway
-export { applyNginxRoute, deleteNginxRoute, applyNginxRoutesBatch } from "./gateway/http/nginx.js";
+import { applyNginxRoute, deleteNginxRoute, applyNginxRoutesBatch } from "./gateway/http/nginx.js";
 
 // Secrets helpers (local helpers; API/worker should prefer packages/shared/crypto.js)
-export { encryptString, decryptString } from "./secrets/encrypt.js";
-export { generateSshKeypair } from "./secrets/sshKeys.js";
-export { injectEnvToContainer } from "./secrets/inject.js";
+import { encryptString, decryptString } from "./secrets/encrypt.js";
+import { generateSshKeypair } from "./secrets/sshKeys.js";
+import { injectEnvToContainer } from "./secrets/inject.js";
+
+
+export {
+    // Docker --------------------------
+    // client
+    getDocker,
+    pingDocker,
+    // compute
+    ensureCompute,
+    startCompute,
+    stopCompute,
+    removeComputeIfExists,
+    extractComputeObserved,
+    // volumes
+    ensureVolume,
+    removeVolumeIfExists,
+    // network
+    ensureNetwork,
+    removeNetworkIfExists,
+    // exec
+    execInContainer,
+
+    // Adapters --------------------------
+
+    // minio
+    getMinio,
+    ensureBucket,
+    deleteBucket,
+    // postgres
+    ensurePostgresContainer,
+    startPostgres,
+    removePostgresIfExists,
+    extractPostgresObserved,
+    // mosquitto
+    ensureMosquitto,
+    startMosquitto,
+    stopMosquitto,
+    removeMosquittoIfExists,
+    extractMosquittoObserved,
+    // Gateway --------------------------
+
+    // nginx
+    applyNginxRoute,
+    deleteNginxRoute,
+    applyNginxRoutesBatch,
+
+    // Secrets helpers --------------------------
+
+    // secrets/encrypt
+    encryptString,
+    decryptString,
+    // secrets/sshKeys
+    generateSshKeypair,
+    // secrets/inject
+    injectEnvToContainer
+}
