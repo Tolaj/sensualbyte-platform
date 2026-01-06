@@ -37,7 +37,7 @@ See full documentation and guidelines:
 ## 📁 Project Structure
 
 ```ini
-sensual-platform/
+sensualbyte-platform/
 ├─ apps/
 │  ├─ api/                            
 │  │  └─ src/
@@ -106,6 +106,7 @@ sensual-platform/
    └─ migrate.sh
 
 
+
 ```
 
 ---
@@ -116,12 +117,14 @@ sensual-platform/
 
 ```sh
 ./scripts/install.sh --yes --defaults
+
 ```
 
 ### Install setup
 
 ```sh
 ./scripts/install.sh
+
 ```
 
 ---
@@ -147,6 +150,7 @@ Install locally:
 
 ```sh
 pip install dist/fincalc-0.1.0-py3-none-any.whl
+
 
 ```
 

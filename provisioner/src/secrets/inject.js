@@ -8,7 +8,7 @@ function escapeShSingleQuotes(s) {
 }
 
 /**
- * Writes env variables into a file inside the container (default: /etc/sensual/env).
+ * Writes env variables into a file inside the container (default: /etc/sensualbyte/env).
  * This does NOT automatically apply env to the running process unless the app reads it.
  * It's useful for "ssh_box" or debug containers.
  */
@@ -16,7 +16,7 @@ export async function injectEnvToContainer(docker, containerName, envMap, opts =
     if (!docker) throw new Error("docker client required");
     if (!containerName) throw new Error("containerName required");
 
-    const targetPath = opts.path || "/etc/sensual/env";
+    const targetPath = opts.path || "/etc/sensualbyte/env";
     const mode = opts.mode || "600";
 
     const entries = Object.entries(envMap || {});

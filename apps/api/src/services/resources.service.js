@@ -104,7 +104,7 @@ export function resourcesService(db) {
                 protocol: "http"
             },
             desiredState: "active",
-            labels: { "sensual.platformManaged": "true" },
+            labels: { "sensualbyte.platformManaged": "true" },
             generation: 1,
             createdBy,
             createdAt: now(),

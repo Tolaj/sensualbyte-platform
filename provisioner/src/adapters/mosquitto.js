@@ -11,7 +11,7 @@ function containerName(resourceId) {
 function mqttLabels(resource) {
     return {
         ...baseLabels(resource),
-        "sensual.mqtt.engine": "mosquitto"
+        "sensualbyte.mqtt.engine": "mosquitto"
     };
 }
 
@@ -55,8 +55,8 @@ export async function ensureMosquitto(docker, resource) {
 
     const netName = spec.network?.name || "sensualbyte_default";
     await ensureNetwork(docker, netName, {
-        "sensual.kind": "network",
-        "sensual.network": "bridge"
+        "sensualbyte.kind": "network",
+        "sensualbyte.network": "bridge"
     });
 
     const existing = await inspectIfExists(docker, name);
@@ -71,14 +71,14 @@ export async function ensureMosquitto(docker, resource) {
     const binds = [];
     if (persistence) {
         await ensureVolume(docker, dataVol, {
-            "sensual.kind": "volume",
-            "sensual.resourceId": String(resource.resourceId),
-            "sensual.usage": "mqtt_data"
+            "sensualbyte.kind": "volume",
+            "sensualbyte.resourceId": String(resource.resourceId),
+            "sensualbyte.usage": "mqtt_data"
         });
         await ensureVolume(docker, logVol, {
-            "sensual.kind": "volume",
-            "sensual.resourceId": String(resource.resourceId),
-            "sensual.usage": "mqtt_log"
+            "sensualbyte.kind": "volume",
+            "sensualbyte.resourceId": String(resource.resourceId),
+            "sensualbyte.usage": "mqtt_log"
         });
 
         binds.push(`${dataVol}:/mosquitto/data`, `${logVol}:/mosquitto/log`);

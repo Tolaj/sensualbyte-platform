@@ -55,7 +55,7 @@ test("worker e2e: compute resource -> provisions docker container and sets statu
             image: "nginxdemos/hello:latest",
             mode: "paas",
             resources: { cpu: 0.2, memoryMb: 128 },
-            network: { name: "sensual_test_net", exposure: "public", internalPort: 80 },
+            network: { name: "sensualbyte_test_net", exposure: "public", internalPort: 80 },
             env: {}
         },
         desiredState: "running",
