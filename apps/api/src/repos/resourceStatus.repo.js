@@ -1,30 +1,48 @@
+// apps/api/src/repos/resourceStatus.repo.js
 export function resourceStatusRepo(db) {
     const col = db.collection("resource_status");
 
+    function normalizeId(resourceId) {
+        const rid = String(resourceId ?? "").trim();
+        if (!rid) {
+            const e = new Error("resourceId is required");
+            e.statusCode = 400;
+            throw e;
+        }
+        return rid;
+    }
+
+    function stripImmutable(patch) {
+        const safe = { ...(patch || {}) };
+        delete safe.resourceId;   // immutable
+        delete safe.createdAt;    // immutable if present
+        return safe;
+    }
+
     return {
         async get(resourceId) {
-            return col.findOne({ resourceId });
+            const rid = normalizeId(resourceId);
+            return col.findOne({ resourceId: rid });
         },
 
         async upsert(resourceId, patch) {
-            const p = patch || {};
+            const rid = normalizeId(resourceId);
 
-            // Prevent Mongo conflict: never include resourceId inside $set
-            const { resourceId: _ignore, ...safePatch } = p;
+            const safePatch = stripImmutable(patch);
 
-            // Always touch lastUpdatedAt unless caller already did
-            if (!safePatch.lastUpdatedAt) safePatch.lastUpdatedAt = new Date();
+            // Always touch lastUpdatedAt server-side (caller can’t prevent it)
+            safePatch.lastUpdatedAt = new Date();
 
-            await col.updateOne(
-                { resourceId },
+            const r = await col.findOneAndUpdate(
+                { resourceId: rid },
                 {
-                    $setOnInsert: { resourceId },
+                    $setOnInsert: { resourceId: rid, createdAt: new Date() },
                     $set: safePatch
                 },
-                { upsert: true }
+                { upsert: true, returnDocument: "after" }
             );
 
-            return col.findOne({ resourceId });
+            return r.value;
         }
     };
 }

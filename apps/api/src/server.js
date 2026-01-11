@@ -1,56 +1,85 @@
-import "../../../packages/shared/loadEnv.js";
 import http from "node:http";
 
+import { loadEnv } from "./config/loadEnv.js";
 import { createApp } from "./app.js";
 import { getMongoDb, closeMongo } from "./db/mongo.js";
 import { getRedis, closeRedis } from "./db/redis.js";
+
+function required(name) {
+  const v = process.env[name];
+  if (v === undefined || v === null || String(v).trim() === "") {
+    const e = new Error(`Missing required env var: ${name}`);
+    e.statusCode = 500;
+    throw e;
+  }
+  return v;
+}
 
 const PORT = Number(process.env.API_PORT || 3001);
 const HOST = process.env.API_HOST || "0.0.0.0";
 
 async function main() {
-    const db = await getMongoDb();
-    const redis = await getRedis();
+  loadEnv();
 
-    const app = createApp({ db, redis });
+  // Required runtime dependencies for a production boot.
+  required("MONGO_URI");
+  required("MONGO_DB");
+  required("REDIS_URL");
 
-    app.get("/", (_req, res) => res.json({ status: "OK" }));
+  const db = await getMongoDb();
+  const redis = await getRedis();
 
-    const server = http.createServer(app);
+  const app = createApp({ db, redis });
 
-    server.listen(PORT, HOST, () => {
-        console.log(`✅ API listening on http://${HOST}:${PORT}`);
-    });
+  // basic liveness (already in app.js), plus readiness with real dependency checks
+  app.get("/readyz", async (_req, res) => {
+    try {
+      await db.command({ ping: 1 });
+      await redis.ping();
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(503).json({ ok: false, error: err?.message || String(err) });
+    }
+  });
 
-    const shutdown = async (sig) => {
-        console.log(`\n🛑 ${sig} received, shutting down...`);
+  // nice root for local testing
+  app.get("/", (_req, res) => res.json({ status: "OK" }));
 
-        try {
-            await new Promise((resolve) => server.close(resolve));
-        } catch (e) {
-            console.error("server close error:", e?.message || e);
-        }
+  const server = http.createServer(app);
 
-        try {
-            await closeRedis();
-        } catch (e) {
-            console.error("redis close error:", e?.message || e);
-        }
+  server.listen(PORT, HOST, () => {
+    console.log(`✅ API listening on http://${HOST}:${PORT}`);
+  });
 
-        try {
-            await closeMongo();
-        } catch (e) {
-            console.error("mongo close error:", e?.message || e);
-        }
+  const shutdown = async (sig) => {
+    console.log(`\n🛑 ${sig} received, shutting down...`);
 
-        process.exit(0);
-    };
+    try {
+      await new Promise((resolve) => server.close(resolve));
+    } catch (e) {
+      console.error("server close error:", e?.message || e);
+    }
 
-    process.on("SIGINT", () => shutdown("SIGINT"));
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    try {
+      await closeRedis();
+    } catch (e) {
+      console.error("redis close error:", e?.message || e);
+    }
+
+    try {
+      await closeMongo();
+    } catch (e) {
+      console.error("mongo close error:", e?.message || e);
+    }
+
+    process.exit(0);
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 main().catch((err) => {
-    console.error("❌ Failed to start API:", err);
-    process.exit(1);
+  console.error("❌ Failed to start API:", err);
+  process.exit(1);
 });

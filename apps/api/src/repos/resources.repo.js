@@ -1,26 +1,46 @@
+// apps/api/src/repos/resources.repo.js
 export function resourcesRepo(db) {
     const col = db.collection("resources");
 
-    function stripResourceId(patch) {
+    function stripImmutable(patch) {
         const safe = { ...(patch || {}) };
-        // never allow these to be updated
+
+        // Immutable (never mutable once created)
+        delete safe.resourceId;
         delete safe.projectId;
+        delete safe.kind;
         delete safe.createdAt;
         delete safe.createdBy;
-        delete safe.resourceId; // prevent conflict & immutability break
+        delete safe.parentResourceId;
+        delete safe.rootResourceId;
+
+        // IMPORTANT:
+        // updatedAt MUST be allowed because the service sets it intentionally.
+        // (Do not accept updatedAt from untrusted inputs in controllers; that is enforced elsewhere.)
+
         return safe;
     }
 
+    function asNonEmptyString(v, fieldName) {
+        const s = String(v ?? "").trim();
+        if (!s) {
+            const e = new Error(`${fieldName} is required`);
+            e.statusCode = 400;
+            throw e;
+        }
+        return s;
+    }
 
     return {
         async getByResourceId(resourceId) {
-            return col.findOne({ resourceId });
+            const rid = asNonEmptyString(resourceId, "resourceId");
+            return col.findOne({ resourceId: rid });
         },
 
         async list({ projectId, kind } = {}) {
             const q = {};
-            if (projectId) q.projectId = projectId;
-            if (kind) q.kind = kind;
+            if (projectId) q.projectId = String(projectId);
+            if (kind) q.kind = String(kind);
 
             return col.find(q).sort({ createdAt: -1 }).toArray();
         },
@@ -31,13 +51,21 @@ export function resourcesRepo(db) {
         },
 
         async update(resourceId, patch) {
-            const safe = stripResourceId(patch);
-            await col.updateOne({ resourceId }, { $set: safe });
-            return col.findOne({ resourceId });
+            const rid = asNonEmptyString(resourceId, "resourceId");
+            const safe = stripImmutable(patch);
+
+            const r = await col.findOneAndUpdate(
+                { resourceId: rid },
+                { $set: safe },
+                { returnDocument: "after" }
+            );
+
+            return r.value; // null if not found
         },
 
         async deleteOneByResourceId(resourceId) {
-            const r = await col.deleteOne({ resourceId });
+            const rid = asNonEmptyString(resourceId, "resourceId");
+            const r = await col.deleteOne({ resourceId: rid });
             return { deleted: r.deletedCount === 1 };
         }
     };

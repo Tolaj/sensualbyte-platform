@@ -38,25 +38,24 @@
         "globalRole": {
           "bsonType": "string",
           "enum": [
-            "super_admin",
-            "platform_admin",
-            "user"
+            "user",
+            "super_admin"
           ]
         },
         "active": {
           "bsonType": "bool"
-        },
-        "createdAt": {
-          "bsonType": "date"
-        },
-        "updatedAt": {
-          "bsonType": "date"
         },
         "lastLoginAt": {
           "bsonType": [
             "date",
             "null"
           ]
+        },
+        "createdAt": {
+          "bsonType": "date"
+        },
+        "updatedAt": {
+          "bsonType": "date"
         }
       }
     }

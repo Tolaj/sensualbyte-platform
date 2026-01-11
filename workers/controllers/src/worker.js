@@ -8,6 +8,7 @@ import { resourceStatusRepo } from "./repos/resourceStatus.repo.js";
 import { secretsRepo } from "./repos/secrets.repo.js";
 import { observedCache } from "./cache/observedCache.js";
 import { createOutboxPoller } from "./outboxPoller.js";
+import { createDriftSweeper } from "./driftSweep.js";
 
 const POLL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 400);
 
@@ -23,22 +24,49 @@ async function main() {
         obsCache: observedCache(redis)
     });
 
+    const POLL_MS = Number(process.env.WORKER_POLL_INTERVAL_MS || 400);
+    const IDLE_SLEEP_MS = POLL_MS;
+    const ERROR_BACKOFF_MS = 800;
+
+    const obsCache = observedCache(redis);
+
+    const sweeper = createDriftSweeper({
+        db,
+        statusRepo: resourceStatusRepo(db),
+        obsCache,
+        secretsRepo: secretsRepo(db),
+        workerId: process.env.WORKER_ID
+    });
+
     console.log("✅ worker running", { id: process.env.WORKER_ID || "worker_01" });
 
     while (true) {
         try {
-            const didWork = await poller.tick();
-            if (!didWork) await new Promise((r) => setTimeout(r, POLL_MS));
+            // 1) Outbox is highest priority
+            const didOutboxWork = await poller.tick();
+
+            // 2) If no outbox work, run drift sweep (converge actual -> desired)
+            let didSweepWork = false;
+            if (!didOutboxWork) {
+                didSweepWork = await sweeper.runOnce(); // returns true if it reconciled anything
+            }
+
+            // 3) If nothing happened, sleep a bit
+            if (!didOutboxWork && !didSweepWork) {
+                await new Promise((r) => setTimeout(r, IDLE_SLEEP_MS));
+            }
         } catch (e) {
             console.error("worker error:", {
-                message: e?.message,
+                message: e?.message || String(e),
                 code: e?.code,
                 schemaRulesNotSatisfied: e?.errInfo?.details?.schemaRulesNotSatisfied,
             });
-            await new Promise((r) => setTimeout(r, 800));
-        }
 
+            // backoff to avoid log spam / hot loop
+            await new Promise((r) => setTimeout(r, ERROR_BACKOFF_MS));
+        }
     }
+
 }
 
 main().catch((e) => {

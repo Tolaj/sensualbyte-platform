@@ -1,61 +1,152 @@
-import "../../../../packages/shared/loadEnv.js";
+import { loadEnv } from "../config/loadEnv.js";
 import { getMongoDb, closeMongo } from "./mongo.js";
 
 /**
- * Simple deterministic upsert helper.
+ * Deterministic upsert:
+ * - createdAt only on insert
+ * - updatedAt on every run
+ * - ignores incoming createdAt/updatedAt from doc
  */
 async function upsertBy(db, collection, filter, doc) {
     const now = new Date();
-    const setOnInsert = { createdAt: now };
-    const set = { ...doc, updatedAt: now };
-    await db.collection(collection).updateOne(filter, { $setOnInsert: setOnInsert, $set: set }, { upsert: true });
+    const { createdAt: _c, updatedAt: _u, ...rest } = doc || {};
+
+    await db.collection(collection).updateOne(
+        filter,
+        {
+            $setOnInsert: { createdAt: now },
+            $set: { ...rest, updatedAt: now }
+        },
+        { upsert: true }
+    );
 }
 
-async function seedCoreIdentity(db) {
-    // demo user (header auth uses x-user-id, but it’s still nice to have it real)
-    await upsertBy(db, "users", { userId: "user_demo" }, {
-        userId: "user_demo",
-        email: "demo@sensualbyte.local",
-        passwordHash: "dev_only_no_password",
-        name: "Demo User",
-        username: "demo",
-        globalRole: "platform_admin",
+/**
+ * IAM roles: platform policy source of truth
+ */
+async function seedIamRoles(db) {
+    const roles = [
+        // GLOBAL
+        {
+            roleId: "super_admin",
+            name: "Super Admin",
+            description: "Full access to everything in the platform.",
+            scopeType: "global",
+            permissions: ["*"],
+            inherits: null,
+            system: true
+        },
+
+        // USER SELF
+        {
+            roleId: "user_owner",
+            name: "User Owner",
+            description: "Full control of own user scope.",
+            scopeType: "user",
+            permissions: ["user.*"],
+            inherits: null,
+            system: true
+        },
+
+        // TEAM
+        {
+            roleId: "team_owner",
+            name: "Team Owner",
+            description: "Full control of team, membership, and team projects.",
+            scopeType: "team",
+            permissions: ["team.*", "project.*", "iam.*"],
+            inherits: null,
+            system: true
+        },
+        {
+            roleId: "team_member",
+            name: "Team Member",
+            description: "Basic team access.",
+            scopeType: "team",
+            permissions: ["team.read", "project.create", "project.read"],
+            inherits: null,
+            system: true
+        },
+        {
+            roleId: "team_viewer",
+            name: "Team Viewer",
+            description: "Read-only team access.",
+            scopeType: "team",
+            permissions: ["team.read", "project.read"],
+            inherits: null,
+            system: true
+        },
+
+        // PROJECT
+        {
+            roleId: "project_owner",
+            name: "Project Owner",
+            description: "Full control of project and its resources.",
+            scopeType: "project",
+            permissions: ["project.*", "resource.*", "secret.*"],
+            inherits: null,
+            system: true
+        },
+        {
+            roleId: "project_editor",
+            name: "Project Editor",
+            description: "Can manage resources in project.",
+            scopeType: "project",
+            permissions: ["project.read", "resource.create", "resource.read", "resource.update", "secret.read"],
+            inherits: null,
+            system: true
+        },
+        {
+            roleId: "project_viewer",
+            name: "Project Viewer",
+            description: "Read-only access to project/resources.",
+            scopeType: "project",
+            permissions: ["project.read", "resource.read"],
+            inherits: null,
+            system: true
+        }
+    ];
+
+    for (const r of roles) {
+        await upsertBy(db, "iam_roles", { roleId: r.roleId }, r);
+    }
+}
+
+/**
+ * Super admin user + global binding
+ * NOTE: passwordHash is placeholder because v1 auth is header-based.
+ */
+async function seedSuperAdmin(db) {
+    await upsertBy(db, "users", { userId: "user_superadmin" }, {
+        userId: "user_superadmin",
+        email: "superadmin@sensualbyte.local",
+        passwordHash: "CHANGE_ME_USE_REAL_AUTH_LATER",
+        name: "Platform Super Admin",
+        username: "superadmin",
+        globalRole: "super_admin",
         active: true,
         lastLoginAt: null
     });
 
-    await upsertBy(db, "teams", { teamId: "team_demo" }, {
-        teamId: "team_demo",
-        name: "Demo Team",
-        createdBy: "user_demo"
-    });
-
-    await upsertBy(db, "team_members", { teamId: "team_demo", userId: "user_demo" }, {
-        teamId: "team_demo",
-        userId: "user_demo",
-        role: "owner"
-    });
-
-    await upsertBy(db, "projects", { projectId: "proj_demo" }, {
-        projectId: "proj_demo",
-        teamId: "team_demo",
-        name: "Demo Project",
-        createdBy: "user_demo"
-    });
-
-    // RBAC binding: user_demo owns proj_demo
-    await upsertBy(db, "role_bindings", {
-        resourceType: "project",
-        resourceId: "proj_demo",
-        subjectType: "user",
-        subjectId: "user_demo"
-    }, {
-        resourceType: "project",
-        resourceId: "proj_demo",
-        subjectType: "user",
-        subjectId: "user_demo",
-        role: "owner"
-    });
+    await upsertBy(
+        db,
+        "iam_bindings",
+        {
+            scopeType: "global",
+            scopeId: "global",
+            subjectType: "user",
+            subjectId: "user_superadmin"
+        },
+        {
+            bindingId: "bind_superadmin_global",
+            scopeType: "global",
+            scopeId: "global",
+            subjectType: "user",
+            subjectId: "user_superadmin",
+            roleId: "super_admin",
+            createdBy: "user_superadmin"
+        }
+    );
 }
 
 async function seedSecretStores(db) {
@@ -69,14 +160,13 @@ async function seedSecretStores(db) {
 
 async function seedCatalogCategories(db) {
     const categories = [
-        { categoryId: "compute", name: "☁️ Compute", description: "Processing power and app runtime", order: 10 },
-        { categoryId: "storage", name: "💾 Storage", description: "Object and volume storage", order: 20 },
-        { categoryId: "database", name: "🗄️ Databases", description: "Managed databases", order: 30 },
-        { categoryId: "networking", name: "🌐 Networking & Content Delivery", description: "Routing and traffic management", order: 40 },
-        { categoryId: "identity", name: "🔐 Security, Identity & Compliance", description: "Users, roles, tokens, secrets", order: 50 },
-        { categoryId: "observability", name: "📊 Observability", description: "Logs and metrics", order: 60 },
-        { categoryId: "management", name: "🛠️ Management", description: "Ops tooling and automation", order: 70 },
-        { categoryId: "integration", name: "🚀 Application Integration", description: "Messaging, events, MQTT", order: 80 }
+        { categoryId: "compute", name: "Compute", description: "Processing power and app runtime", order: 10 },
+        { categoryId: "storage", name: "Storage", description: "Object and volume storage", order: 20 },
+        { categoryId: "database", name: "Databases", description: "Managed databases", order: 30 },
+        { categoryId: "networking", name: "Networking", description: "Routing and traffic management", order: 40 },
+        { categoryId: "identity", name: "Identity", description: "Users, roles, tokens, secrets", order: 50 },
+        { categoryId: "observability", name: "Observability", description: "Logs and metrics", order: 60 },
+        { categoryId: "management", name: "Management", description: "Ops tooling and automation", order: 70 }
     ];
 
     for (const c of categories) {
@@ -89,15 +179,15 @@ async function seedResourceKinds(db) {
         {
             kind: "compute",
             displayName: "Compute",
-            description: "Abstract compute. v1 uses Docker containers; future can be VMs.",
+            description: "Docker container based compute (v1).",
             controller: { name: "compute.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/compute.spec.schema.json",
-            metadata: { implementation: "docker_containers_v1", notes: "spec.implementation=docker in v1" }
+            metadata: { implementation: "docker_containers_v1" }
         },
         {
             kind: "bucket",
             displayName: "Object Bucket",
-            description: "S3-like bucket backed by MinIO",
+            description: "S3-like bucket backed by MinIO.",
             controller: { name: "bucket.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/bucket.spec.schema.json",
             metadata: { implementation: "minio_v1" }
@@ -105,7 +195,7 @@ async function seedResourceKinds(db) {
         {
             kind: "volume",
             displayName: "Volume",
-            description: "Persistent storage volume (Docker volume in v1)",
+            description: "Persistent volume (Docker volume in v1).",
             controller: { name: "volume.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/volume.spec.schema.json",
             metadata: { implementation: "docker_volume_v1" }
@@ -113,7 +203,7 @@ async function seedResourceKinds(db) {
         {
             kind: "http_route",
             displayName: "HTTP Route",
-            description: "HTTP/WebSocket routing via Nginx gateway",
+            description: "HTTP routing via Nginx gateway.",
             controller: { name: "httpRoute.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/http_route.spec.schema.json",
             metadata: { implementation: "nginx_gateway_v1" }
@@ -121,7 +211,7 @@ async function seedResourceKinds(db) {
         {
             kind: "postgres",
             displayName: "Managed Postgres",
-            description: "Single-node managed Postgres",
+            description: "Single-node managed Postgres (container based).",
             controller: { name: "postgres.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/postgres.spec.schema.json",
             metadata: { implementation: "docker_postgres_v1" }
@@ -129,20 +219,20 @@ async function seedResourceKinds(db) {
         {
             kind: "observability",
             displayName: "Observability Attachment",
-            description: "Enable logs/metrics collection for targets",
+            description: "Logs/metrics for targets (redis observed cache).",
             controller: { name: "observability.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/observability.spec.schema.json",
             metadata: { implementation: "basic_logs_metrics_v1" }
         },
-        // optional (worker has stub, so seeding it is OK)
         {
             kind: "mqtt",
             displayName: "MQTT",
-            description: "Managed MQTT (future). v1 stub.",
+            description: "MQTT endpoint / broker integration.",
             controller: { name: "mqtt.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/mqtt.spec.schema.json",
-            metadata: { implementation: "not_implemented_v1" }
+            metadata: { implementation: "mqtt_v1" }
         }
+
     ];
 
     for (const k of kinds) {
@@ -152,12 +242,11 @@ async function seedResourceKinds(db) {
 
 async function seedCatalogItems(db) {
     const items = [
-        // ☁️ Compute
         {
             catalogId: "compute_instance",
             categoryId: "compute",
-            name: "Compute Instance (EC2-like)",
-            description: "Single compute instance with SSH access (container-based in v1).",
+            name: "Compute Instance",
+            description: "Single compute instance with SSH (container-based in v1).",
             kind: "compute",
             defaults: {
                 implementation: "docker",
@@ -173,8 +262,8 @@ async function seedCatalogItems(db) {
         {
             catalogId: "container_service",
             categoryId: "compute",
-            name: "Container Service (ECS-like)",
-            description: "PaaS-style compute with health checks and replicas (v1 runs containers).",
+            name: "Container Service",
+            description: "PaaS-style compute (v1 runs containers).",
             kind: "compute",
             defaults: {
                 implementation: "docker",
@@ -188,28 +277,9 @@ async function seedCatalogItems(db) {
             }
         },
         {
-            catalogId: "ssh_box",
-            categoryId: "compute",
-            name: "SSH Box",
-            description: "A ready-to-SSH compute instance (container-based).",
-            kind: "compute",
-            defaults: {
-                implementation: "docker",
-                mode: "iaas",
-                image: "linuxserver/openssh-server:latest",
-                resources: { cpu: 1, memoryMb: 512 },
-                network: { exposure: "internal", internalPort: 2222 },
-                iaas: { sshUser: "ubuntu", sshKeySecretRef: null },
-                env: { PUID: "1000", PGID: "1000", TZ: "America/New_York" },
-                storage: { mounts: [] }
-            }
-        },
-
-        // 💾 Storage
-        {
             catalogId: "object_bucket",
             categoryId: "storage",
-            name: "Object Bucket (S3-like)",
+            name: "Object Bucket",
             description: "S3-like object bucket backed by MinIO.",
             kind: "bucket",
             defaults: { bucketName: null, versioning: false, publicRead: false, quotaMb: null }
@@ -218,12 +288,10 @@ async function seedCatalogItems(db) {
             catalogId: "persistent_volume",
             categoryId: "storage",
             name: "Persistent Volume",
-            description: "A persistent volume (Docker volume in v1).",
+            description: "Persistent volume (Docker volume in v1).",
             kind: "volume",
             defaults: { name: null, sizeMb: null }
         },
-
-        // 🌐 Networking
         {
             catalogId: "http_route",
             categoryId: "networking",
@@ -232,12 +300,10 @@ async function seedCatalogItems(db) {
             kind: "http_route",
             defaults: { hostname: null, pathPrefix: null, targetResourceId: null, targetPort: null, protocol: "http" }
         },
-
-        // 🗄️ Database
         {
             catalogId: "managed_postgres",
             categoryId: "database",
-            name: "Managed Postgres (RDS-like)",
+            name: "Managed Postgres",
             description: "Single-node managed Postgres.",
             kind: "postgres",
             defaults: {
@@ -249,13 +315,11 @@ async function seedCatalogItems(db) {
                 backups: { enabled: true, retentionDays: 7 }
             }
         },
-
-        // 📊 Observability
         {
             catalogId: "logs_metrics",
             categoryId: "observability",
             name: "Logs + Metrics",
-            description: "Enable basic logs and metrics collection for target resources.",
+            description: "Enable basic logs and metrics collection.",
             kind: "observability",
             defaults: { logs: { enabled: true }, metrics: { enabled: true }, targets: [] }
         }
@@ -267,21 +331,33 @@ async function seedCatalogItems(db) {
 }
 
 async function main() {
+    loadEnv();
     const db = await getMongoDb();
 
-    await seedSecretStores(db);
-    await seedCoreIdentity(db);
+    try {
+        await seedSecretStores(db);
 
-    await seedCatalogCategories(db);
-    await seedResourceKinds(db);
-    await seedCatalogItems(db);
+        console.log("Seeding IAM roles...");
+        await seedIamRoles(db);
 
-    console.log("✅ Seed complete");
-    await closeMongo();
+        console.log("Seeding super admin user...");
+        await seedSuperAdmin(db);
+
+        await seedCatalogCategories(db);
+        await seedResourceKinds(db);
+        await seedCatalogItems(db);
+
+        console.log("✅ Seed complete");
+    } finally {
+        await closeMongo();
+    }
 }
 
-main().catch(async (err) => {
-    console.error("❌ db:seed failed:", err);
-    await closeMongo();
+main().catch((err) => {
+    console.error(
+        "❌ db:seed failed:",
+        err?.message || err,
+        err?.errInfo?.details?.schemaRulesNotSatisfied || ""
+    );
     process.exit(1);
 });

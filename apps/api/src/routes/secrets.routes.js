@@ -1,3 +1,4 @@
+// apps/api/src/routes/secrets.routes.js
 import { Router } from "express";
 import { secretsController } from "../controllers/secrets.controller.js";
 import { requireAuth } from "../middleware/auth.js";
@@ -7,8 +8,10 @@ export function secretsRoutes() {
     const r = Router();
     r.use(requireAuth());
 
-    r.get("/", asyncHandler((req, res) => secretsController(req.ctx.db).list(req, res)));
-    r.get("/:secretId", asyncHandler((req, res) => secretsController(req.ctx.db).get(req, res)));
+    const ctrl = (req) => secretsController(req.ctx.db);
+
+    r.get("/", asyncHandler((req, res) => ctrl(req).list(req, res)));
+    r.get("/:secretId", asyncHandler((req, res) => ctrl(req).get(req, res)));
 
     return r;
 }

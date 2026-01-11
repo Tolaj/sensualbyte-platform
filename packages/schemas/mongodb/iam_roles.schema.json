@@ -1,0 +1,67 @@
+{
+    "collection": "iam_roles",
+    "validator": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "roleId",
+                "name",
+                "scopeType",
+                "permissions",
+                "system",
+                "createdAt",
+                "updatedAt"
+            ],
+            "properties": {
+                "_id": {},
+                "roleId": {
+                    "bsonType": "string"
+                },
+                "name": {
+                    "bsonType": "string"
+                },
+                "description": {
+                    "bsonType": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "scopeType": {
+                    "bsonType": "string",
+                    "enum": [
+                        "global",
+                        "user",
+                        "team",
+                        "project",
+                        "resource",
+                        "secret"
+                    ]
+                },
+                "permissions": {
+                    "bsonType": "array",
+                    "items": {
+                        "bsonType": "string"
+                    }
+                },
+                "inherits": {
+                    "bsonType": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "bsonType": "string"
+                    }
+                },
+                "system": {
+                    "bsonType": "bool"
+                },
+                "createdAt": {
+                    "bsonType": "date"
+                },
+                "updatedAt": {
+                    "bsonType": "date"
+                }
+            }
+        }
+    }
+}

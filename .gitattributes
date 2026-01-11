@@ -1,1 +1,21 @@
+# Default: treat text files as text and normalize to LF in repo
+* text=auto eol=lf
+
+# Explicitly enforce LF for env/config files
+*.env text eol=lf
+.env text eol=lf
+
+# Scripts
 *.sh text eol=lf
+
+# Optional: common config formats
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.md text eol=lf
+
+# Windows-only scripts should stay CRLF (if you ever add them)
+*.bat text eol=crlf
+*.cmd text eol=crlf

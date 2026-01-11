@@ -1,0 +1,62 @@
+{
+    "collection": "iam_bindings",
+    "validator": {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": [
+                "bindingId",
+                "scopeType",
+                "scopeId",
+                "subjectType",
+                "subjectId",
+                "roleId",
+                "createdAt",
+                "updatedAt"
+            ],
+            "properties": {
+                "_id": {},
+                "bindingId": {
+                    "bsonType": "string"
+                },
+                "scopeType": {
+                    "bsonType": "string",
+                    "enum": [
+                        "global",
+                        "user",
+                        "team",
+                        "project",
+                        "resource",
+                        "secret"
+                    ]
+                },
+                "scopeId": {
+                    "bsonType": "string"
+                },
+                "subjectType": {
+                    "bsonType": "string",
+                    "enum": [
+                        "user"
+                    ]
+                },
+                "subjectId": {
+                    "bsonType": "string"
+                },
+                "roleId": {
+                    "bsonType": "string"
+                },
+                "createdBy": {
+                    "bsonType": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "createdAt": {
+                    "bsonType": "date"
+                },
+                "updatedAt": {
+                    "bsonType": "date"
+                }
+            }
+        }
+    }
+}
