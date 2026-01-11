@@ -1,20 +1,6 @@
-import crypto from "node:crypto";
-import {
-    getDocker,
-    ensureCompute,
-    startCompute,
-    stopCompute,
-    removeComputeIfExists,
-    extractComputeObserved,
-    encryptString,
-    generateSshKeypair
-} from "@sensualbyte/provisioner";
-
+// workers/controllers/src/kinds/compute.controller.js
+import { getDocker, ensureCompute, startCompute, stopCompute, removeComputeIfExists, extractComputeObserved, encryptString, decryptString, generateSshKeypair } from "@sensualbyte/provisioner";
 import { setStatus } from "../common/status.js";
-
-function genId(prefix) {
-    return `${prefix}_${crypto.randomBytes(6).toString("hex")}${Date.now().toString(16)}`;
-}
 
 function sshEndpoint(resource, observed) {
     if ((resource.spec?.mode || "") !== "iaas") return null;
@@ -27,8 +13,48 @@ function sshEndpoint(resource, observed) {
 
     return {
         host: process.env.SSH_HOST || "localhost",
-        port: Number(binding.HostPort)
+        port: Number(binding.HostPort),
+        user: resource.spec?.iaas?.sshUser || "ubuntu"
     };
+}
+
+async function getOrCreateSshSecret({ secretsRepo, resourceId, sshUser }) {
+    const secretId = `sec_${resourceId}_ssh`;
+
+    const existing = await secretsRepo.get(secretId);
+    if (existing) {
+        // decrypt to get public key (needed to inject env every time)
+        const plaintext = decryptString(existing.ciphertext, existing.encryptionMeta);
+        const obj = JSON.parse(plaintext);
+        if (!obj?.publicKeyOpenSsh) throw new Error(`SSH secret ${secretId} missing publicKeyOpenSsh`);
+        return { secretId, publicKeyOpenSsh: obj.publicKeyOpenSsh, created: false };
+    }
+
+    const kp = generateSshKeypair(`sensualbyte:${resourceId}`);
+
+    const payload = JSON.stringify({
+        sshUser,
+        publicKeyOpenSsh: kp.publicKeyOpenSsh,
+        privateKeyPem: kp.privateKeyPem
+    });
+
+    const enc = encryptString(payload);
+
+    // idempotent insert (safe if reconcile runs twice)
+    await secretsRepo.upsertBySecretId(secretId, {
+        secretId,
+        storeId: "store_local",
+        scopeType: "resource",
+        scopeId: resourceId,
+        name: "ssh/keypair",
+        type: "ssh_key",
+        ciphertext: enc.ciphertext,
+        encryptionMeta: enc.encryptionMeta,
+        createdBy: "system",
+        createdAt: new Date()
+    });
+
+    return { secretId, publicKeyOpenSsh: kp.publicKeyOpenSsh, created: true };
 }
 
 export async function reconcileCompute({ resource, statusRepo, obsCache, secretsRepo }) {
@@ -60,30 +86,50 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
         return { statusApplied: true };
     }
 
-    // IaaS: generate ssh key if missing (v1 stores secret, doesn’t mutate desired state)
-    if ((resource.spec?.mode || "") === "iaas" && !resource.spec?.iaas?.sshKeySecretRef) {
-        const kp = generateSshKeypair();
-        const enc = encryptString(kp.privateKey);
+    const isIaas = (resource.spec?.mode || "") === "iaas";
+    let sshKeySecretRef = null;
 
-        const secretId = genId("sec");
-        await secretsRepo.create({
-            secretId,
-            storeId: "store_local",
-            scopeType: "resource",
-            scopeId: resource.resourceId,
-            name: "ssh/privateKey",
-            type: "ssh_key",
-            ciphertext: enc.ciphertext,
-            encryptionMeta: enc.encryptionMeta,
-            createdBy: "system",
-            createdAt: new Date()
+    // If IaaS: ensure SSH secret exists and inject env for linuxserver/openssh-server style images
+    let resourceForProvisioner = resource;
+
+    if (isIaas) {
+        const sshUser = resource.spec?.iaas?.sshUser || "ubuntu";
+
+        const s = await getOrCreateSshSecret({
+            secretsRepo,
+            resourceId: resource.resourceId,
+            sshUser
         });
 
-        await setStatus(statusRepo, resource, {
-            state: "creating",
-            message: "Generated SSH keypair",
-            details: { sshKeySecretRef: secretId, publicKey: kp.publicKey }
-        });
+        sshKeySecretRef = s.secretId;
+
+        // Inject env (works for linuxserver/openssh-server).
+        // For other images, you must provide an image that already runs sshd and honors these envs,
+        // or later we add a bootstrapper/ssh-router. For v1, keep ssh-capable image for iaas.
+        const env = {
+            ...(resource.spec?.env || {}),
+            USER_NAME: sshUser,
+            PUBLIC_KEY: s.publicKeyOpenSsh,
+            PASSWORD_ACCESS: "false",
+            SUDO_ACCESS: "true"
+        };
+
+        resourceForProvisioner = {
+            ...resource,
+            spec: {
+                ...resource.spec,
+                env
+            }
+        };
+
+        if (s.created) {
+            await setStatus(statusRepo, resource, {
+                observedGeneration: resource.generation || 0,
+                state: "creating",
+                message: "Generated SSH keypair",
+                details: { sshKeySecretRef }
+            });
+        }
     }
 
     await setStatus(statusRepo, resource, {
@@ -92,7 +138,7 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
         observedGeneration: resource.generation || 0
     });
 
-    const c = await ensureCompute(docker, resource);
+    const c = await ensureCompute(docker, resourceForProvisioner);
 
     const inspect =
         resource.desiredState === "paused"
@@ -100,13 +146,17 @@ export async function reconcileCompute({ resource, statusRepo, obsCache, secrets
             : await startCompute(c);
 
     const observed = extractComputeObserved(inspect);
-    const ssh = sshEndpoint(resource, observed);
+    const ssh = sshEndpoint(resourceForProvisioner, observed);
 
     await setStatus(statusRepo, resource, {
         observedGeneration: resource.generation || 0,
         state: "ready",
         message: resource.desiredState === "paused" ? "Compute stopped" : "Compute running",
-        details: { lastKnown: observed, ssh }
+        details: {
+            lastKnown: observed,
+            ssh,
+            sshKeySecretRef
+        }
     });
 
     await obsCache.set(resource.resourceId, {

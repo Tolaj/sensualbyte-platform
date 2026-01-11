@@ -45,14 +45,27 @@ function buildResources(spec) {
 }
 
 function buildBinds(spec) {
-    // spec.volumes: [{ volumeName, containerPath, readOnly }]
-    const vols = Array.isArray(spec.volumes) ? spec.volumes : [];
+    // Supports BOTH:
+    // - legacy: spec.volumes: [{ volumeName, containerPath, readOnly }]
+    // - current schema: spec.storage.mounts: [{ volume, mountPath, readOnly }]
     const binds = [];
-    for (const v of vols) {
+
+    const legacy = Array.isArray(spec?.volumes) ? spec.volumes : [];
+    for (const v of legacy) {
         if (!v?.volumeName || !v?.containerPath) continue;
         const ro = v.readOnly ? ":ro" : "";
         binds.push(`${v.volumeName}:${v.containerPath}${ro}`);
     }
+
+    const mounts = Array.isArray(spec?.storage?.mounts) ? spec.storage.mounts : [];
+    for (const m of mounts) {
+        const vol = m?.volume || m?.volumeName;
+        const dst = m?.mountPath || m?.containerPath;
+        if (!vol || !dst) continue;
+        const ro = m.readOnly ? ":ro" : "";
+        binds.push(`${vol}:${dst}${ro}`);
+    }
+
     return binds;
 }
 
@@ -68,18 +81,15 @@ async function inspectIfExists(docker, name) {
 }
 
 async function ensureConnectedToNetwork(docker, { netName, containerRef }) {
-    // containerRef = container name OR container Id (both work)
     try {
         const net = docker.getNetwork(netName);
         await net.connect({ Container: containerRef });
         return { connected: true };
     } catch (err) {
-        // Network truly missing
         if (isNotFoundDockerErr(err)) {
             throw wrapErr("Failed to connect container to network (not found)", err, { netName, containerRef });
         }
 
-        // Safe toleration: already connected / already exists
         const msg = err?.json?.message || err?.message || "";
         if (/already exists|already connected/i.test(msg)) {
             return { connected: false, reason: "already_connected" };
@@ -93,7 +103,7 @@ async function ensureConnectedToNetwork(docker, { netName, containerRef }) {
  * ensureCompute:
  * - Creates container if missing
  * - Ensures it is connected to the desired network
- * - Does NOT start it (start/stop is controlled by worker reconcile)
+ * - Does NOT start it (start/stop controlled by worker reconcile)
  */
 export async function ensureCompute(docker, resource) {
     if (!docker) throw new Error("docker client required");
@@ -106,10 +116,8 @@ export async function ensureCompute(docker, resource) {
 
     const name = containerName(resource.resourceId);
 
-    // ensure image exists locally
     await ensureImage(docker, spec.image);
 
-    // ensure network exists
     const netName = spec.network?.name || "sensualbyte_default";
     await ensureNetwork(docker, netName, {
         "sensualbyte.kind": "network",
@@ -118,7 +126,6 @@ export async function ensureCompute(docker, resource) {
 
     const existing = await inspectIfExists(docker, name);
     if (existing.container) {
-        // If container exists, ensure it is connected to the desired network (idempotent)
         const networks = existing.inspect?.NetworkSettings?.Networks || {};
         const alreadyOnNet = Boolean(networks[netName]);
         if (!alreadyOnNet) {
@@ -154,7 +161,6 @@ export async function ensureCompute(docker, resource) {
         });
     }
 
-    // connect to desired network (tolerates already-connected)
     await ensureConnectedToNetwork(docker, { netName, containerRef: name });
 
     return c;
@@ -194,7 +200,6 @@ export async function removeComputeIfExists(docker, resourceId) {
             try {
                 await c.stop({ t: 10 });
             } catch (err) {
-                // If stop fails for non-notfound, surface it
                 if (!isNotFoundDockerErr(err)) {
                     throw wrapErr("Failed to stop compute container before remove", err, { name });
                 }
