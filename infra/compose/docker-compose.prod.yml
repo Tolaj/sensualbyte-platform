@@ -1,0 +1,144 @@
+name: sensualbyte
+
+services:
+  sb-mongo:
+    image: mongo:7
+    container_name: sb-mongo
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    volumes:
+      - sb_mongo_data:/data/db
+    networks: [sb_net]
+    # optional: keep mongo internal only in prod (no ports)
+
+  sb-redis:
+    image: redis:7-alpine
+    container_name: sb-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - sb_redis_data:/data
+    networks: [sb_net]
+
+  sb-minio:
+    image: minio/minio:latest
+    container_name: sb-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    command: server /data --console-address ":9001"
+    volumes:
+      - sb_minio_data:/data
+    networks: [sb_net]
+    # In prod you might NOT expose ports publicly; keep them internal.
+    # If you still want local admin access, uncomment:
+    # ports:
+    #   - "9000:9000"
+    #   - "9001:9001"
+
+  sb-nginx:
+    build:
+      context: ../nginx
+      dockerfile: Dockerfile
+    container_name: sb-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      
+      - ../nginx/conf.d/00-base.conf:/etc/nginx/nginx.conf:ro
+
+      # Mount ONLY the include file (read-only is fine)
+      - ../nginx/conf.d/00-sb-generated.conf:/etc/nginx/conf.d/00-sb-generated.conf:ro
+
+      # Mount generated route files volume (must be writable)
+      - sb_nginx_routes:/etc/nginx/conf.d/sb-generated
+    networks: [sb_net]
+
+  sb-api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    container_name: sb-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+
+      MONGO_URL: mongodb://sb-mongo:27017/sensualbyte
+      REDIS_URL: redis://sb-redis:6379
+
+      MASTER_KEY_HEX: ${MASTER_KEY_HEX}
+
+      # if API needs MinIO directly
+      MINIO_ENDPOINT: http://sb-minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+      - sb-mongo
+      - sb-redis
+      - sb-minio
+    networks: [sb_net]
+
+  sb-worker:
+    build:
+      context: ../..
+      dockerfile: workers/controllers/Dockerfile
+    container_name: sb-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+      MONGO_URL: mongodb://sb-mongo:27017/sensualbyte
+      REDIS_URL: redis://sb-redis:6379
+      MASTER_KEY_HEX: ${MASTER_KEY_HEX}
+
+      # nginx gateway (worker writes configs + triggers reload)
+      NGINX_CONTAINER_NAME: sb-nginx
+      NGINX_CONF_DIR: /var/sb/nginx/conf.d
+
+      DEFAULT_DOCKER_NETWORK: sb_net
+    depends_on:
+      - sb-api
+      - sb-mongo
+      - sb-redis
+      - sb-nginx
+    networks: [sb_net]
+    volumes:
+      # worker writes generated nginx files here
+      - sb_nginx_routes:/var/sb/nginx/conf.d
+
+      # worker provisions docker resources on the host
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  sb-dashboard:
+    build:
+      context: ../..
+      dockerfile: apps/dashboard/frontend/Dockerfile
+    container_name: sb-dashboard
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_BASE: /api
+    networks: [sb_net]
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: sensualbyte-cloudflared
+    restart: no
+    network_mode: host
+    volumes:
+      - /home/swapnil/.cloudflared:/home/nonroot/.cloudflared
+      - ../cloudflared/config.yml:/etc/cloudflared/config.yml:ro
+    command: tunnel --config /etc/cloudflared/config.yml run
+
+networks:
+  sb_net:
+    name: sb_net
+
+volumes:
+  sb_mongo_data:
+  sb_redis_data:
+  sb_minio_data:
+  sb_nginx_routes:
