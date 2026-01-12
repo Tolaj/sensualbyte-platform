@@ -68,15 +68,15 @@ services:
       dockerfile: apps/api/Dockerfile
     container_name: sb-api
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      MONGO_URL: mongodb://sb-mongo:27017/sensualbyte
-      REDIS_URL: redis://sb-redis:6379
-      MASTER_KEY_HEX: ${MASTER_KEY_HEX}
-      MINIO_ENDPOINT: http://sb-minio:9000
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    # environment:
+    #   NODE_ENV: production
+    #   PORT: 3001
+    #   MONGO_URL: mongodb://sb-mongo:27017/sensualbyte
+    #   REDIS_URL: redis://sb-redis:6379
+    #   MASTER_KEY_HEX: ${MASTER_KEY_HEX}
+    #   MINIO_ENDPOINT: http://sb-minio:9000
+    #   MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+    #   MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     depends_on: [sb-mongo, sb-redis, sb-minio]
     networks: [sb_net]
 

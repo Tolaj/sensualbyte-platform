@@ -1,11 +1,13 @@
 tunnel: sensualbyte-tunnel
-credentials-file: /home/nonroot/.cloudflared/330f4e61-835f-45b1-bbdd-37a18444ff00.json
+credentials-file: /home/nonroot/.cloudflared/1a3f3990-cdce-4ed2-8e68-2e418701a49d.json
 
 ingress:
   - hostname: nginx.sensualbyte.com
     service: http://localhost:8080
+
   - hostname: ecs.sensualbyte.com
     service: http://localhost:8080
+
   - hostname: "*.ecs.sensualbyte.com"
     service: http://localhost:8080
 

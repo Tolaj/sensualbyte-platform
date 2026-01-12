@@ -36,3 +36,50 @@ bash scripts/install.sh --prod -d -y
 
 # Local dev stack, unattended
 bash scripts/install.sh --dev -d -y
+
+```sh
+# Uninstall — all ways (copy/paste)
+
+# 0) (Optional) make scripts executable once
+chmod +x scripts/uninstall.sh scripts/uninstall/platform.sh scripts/uninstall/cloudflare.sh
+
+# 1) Normal interactive uninstall (prompts for each step)
+./scripts/uninstall.sh
+
+# 2) Auto-yes (non-interactive: answers YES to ALL prompts)
+./scripts/uninstall.sh --yes
+./scripts/uninstall.sh -y
+
+# 3) Defaults mode (uses default values for any prompt() calls)
+./scripts/uninstall.sh --defaults
+./scripts/uninstall.sh -d
+
+# 4) Auto-yes + defaults (most automation-friendly)
+./scripts/uninstall.sh --yes --defaults
+./scripts/uninstall.sh -y -d
+
+```
+
+```sh
+# Full verification (prod is default)
+./scripts/verify.sh
+
+# Full verification for DEV
+./scripts/verify.sh --dev
+
+# Only check docker containers (DEV)
+./scripts/verify.sh --dev docker
+
+# Only check nginx (PROD)
+./scripts/verify.sh --prod nginx
+
+# Only run API smoke test (DEV)
+./scripts/verify.sh --dev api
+
+# Check Cloudflare public route (PROD)
+./scripts/verify.sh --prod cloudflare
+
+# Non-interactive full verify (DEV)
+./scripts/verify.sh --dev --yes full
+
+```

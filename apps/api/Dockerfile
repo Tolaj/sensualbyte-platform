@@ -15,6 +15,7 @@ WORKDIR /repo
 COPY --from=deps /repo /repo
 
 WORKDIR /repo/apps/api
+COPY apps/api/docker/entrypoint.sh ./entrypoint.sh
 EXPOSE 3001
 
-CMD ["node", "src/server.js"]
+CMD ["./entrypoint.sh"]
