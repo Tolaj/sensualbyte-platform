@@ -28,6 +28,8 @@ export function secretsRepo(db) {
         encryptionMeta: 0
     };
 
+    const CLEARED_CIPHERTEXT = "__CLEARED_AFTER_REVEAL__";
+
     return {
         // Immutable write
         async create(doc) {
@@ -35,7 +37,6 @@ export function secretsRepo(db) {
                 throw httpError(400, "doc must be an object");
             }
 
-            // Normalize key fields used in queries/indexes
             const secretId = norm(doc.secretId, "secretId");
             const storeId = norm(doc.storeId, "storeId");
             const st = norm(doc.scopeType, "scopeType");
@@ -63,7 +64,10 @@ export function secretsRepo(db) {
                 ciphertext,
                 encryptionMeta,
                 createdBy,
-                createdAt
+                createdAt,
+
+                // defaults for one-time reveal
+                valueRevealed: doc.valueRevealed === true ? true : false
             };
 
             await col.insertOne(toInsert);
@@ -88,7 +92,6 @@ export function secretsRepo(db) {
                 .toArray();
         },
 
-        // Useful for “db/password” style lookups (safe by default)
         async getByScopeName(scopeType, scopeId, name, { includeCiphertext = false } = {}) {
             const q = { ...scope(scopeType, scopeId), name: norm(name, "name") };
             return col.findOne(
@@ -101,6 +104,40 @@ export function secretsRepo(db) {
             const id = norm(secretId, "secretId");
             const r = await col.deleteOne({ secretId: id });
             return { deleted: r.deletedCount === 1 };
-        }
+        },
+
+        /**
+         * One-time reveal claim for ssh_key.
+         * - Returns the PREVIOUS doc (with ciphertext) if claim succeeded
+         * - Returns null if already revealed / not ssh_key / not found
+         */
+        async claimSshKeyForDownload(secretId, revealedBy) {
+            const id = norm(secretId, "secretId");
+            const actor = norm(revealedBy, "revealedBy");
+            const now = new Date();
+
+            const res = await col.findOneAndUpdate(
+                {
+                    secretId: id,
+                    type: "ssh_key",
+                    valueRevealed: { $ne: true },
+                    ciphertext: { $ne: CLEARED_CIPHERTEXT }
+                },
+                {
+                    $set: {
+                        valueRevealed: true,
+                        revealedAt: now,
+                        revealedBy: actor,
+
+                        // keep schema valid, but remove useful ciphertext going forward
+                        ciphertext: CLEARED_CIPHERTEXT
+                    }
+                },
+                { returnDocument: "before" }
+            );
+            return res; // old doc with real ciphertext if first time
+        },
+
+        CLEARED_CIPHERTEXT
     };
 }

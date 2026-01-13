@@ -1,5 +1,5 @@
 tunnel: sensualbyte-tunnel
-credentials-file: /home/nonroot/.cloudflared/1a3f3990-cdce-4ed2-8e68-2e418701a49d.json
+credentials-file: /home/nonroot/.cloudflared/9e4ef73f-717e-427d-a35a-e3d5da98c0a2.json
 
 ingress:
   - hostname: nginx.sensualbyte.com

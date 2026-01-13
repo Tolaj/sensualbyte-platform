@@ -13,5 +13,8 @@ export function secretsRoutes() {
     r.get("/", asyncHandler((req, res) => ctrl(req).list(req, res)));
     r.get("/:secretId", asyncHandler((req, res) => ctrl(req).get(req, res)));
 
+    // ✅ NEW: one-time ssh private key download
+    r.get("/:secretId/ssh-key", asyncHandler((req, res) => ctrl(req).downloadSshKey(req, res)));
+
     return r;
 }
