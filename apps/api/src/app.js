@@ -13,6 +13,7 @@ import { catalogRoutes } from "./routes/catalog.routes.js";
 import { resourcesRoutes } from "./routes/resources.routes.js";
 import { secretsRoutes } from "./routes/secrets.routes.js";
 import { observabilityRoutes } from "./routes/observability.routes.js";
+import { bucketsRoutes } from "./routes/buckets.product.routes.js";
 
 function parseOrigins() {
     const raw = process.env.CORS_ORIGINS;
@@ -52,8 +53,11 @@ function corsMiddleware() {
 }
 
 export function createApp({ db, redis }) {
-    if (!db) throw new Error("createApp: db is required");
-
+    if (!db || typeof db.collection !== "function") {
+        throw new Error(
+            "createApp: db must be a Mongo Db (must have .collection()). Fix getMongoDb() to return client.db(MONGO_DB), not MongoClient or a wrapper."
+        );
+    }
     const app = express();
 
     app.disable("x-powered-by");
@@ -92,6 +96,7 @@ export function createApp({ db, redis }) {
     }
 
 
+
     app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
     app.use("/v1/auth", authRoutes());
@@ -101,6 +106,8 @@ export function createApp({ db, redis }) {
     app.use("/v1/resources", resourcesRoutes());
     app.use("/v1/secrets", secretsRoutes());
     app.use("/v1/observability", observabilityRoutes());
+    // resource
+    app.use("/v1/product/buckets", bucketsRoutes());
 
     app.use(errorHandler());
     return app;

@@ -135,7 +135,9 @@ export function secretsRepo(db) {
                 },
                 { returnDocument: "before" }
             );
-            return res; // old doc with real ciphertext if first time
+
+            // Mongo returns { value, ok, lastErrorObject }. We want the previous document.
+            return res?.value || null;
         },
 
         CLEARED_CIPHERTEXT

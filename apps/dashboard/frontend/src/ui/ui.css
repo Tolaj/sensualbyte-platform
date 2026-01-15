@@ -1,0 +1,94 @@
+/* src/ui/ui.css */
+.sb-btn {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.sb-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.sb-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.sb-btn--primary {
+    border-color: rgba(124, 58, 237, 0.35);
+    background: rgba(124, 58, 237, 0.22);
+}
+
+.sb-btn--secondary {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sb-btn--ghost {
+    background: transparent;
+}
+
+.sb-btn--danger {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.16);
+}
+
+.sb-input,
+.sb-select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(15, 19, 32, 0.65);
+    color: var(--text);
+    outline: none;
+}
+
+.sb-input:focus,
+.sb-select:focus {
+    border-color: rgba(124, 58, 237, 0.45);
+}
+
+.sb-toasts {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.sb-toast {
+    width: min(380px, 92vw);
+    padding: 12px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(15, 19, 32, 0.82);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.sb-toast__title {
+    font-weight: 900;
+}
+
+.sb-toast__msg {
+    color: var(--muted);
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.sb-toast--ok {
+    border-color: rgba(16, 185, 129, 0.35);
+}
+
+.sb-toast--warn {
+    border-color: rgba(245, 158, 11, 0.35);
+}
+
+.sb-toast--danger {
+    border-color: rgba(239, 68, 68, 0.35);
+}

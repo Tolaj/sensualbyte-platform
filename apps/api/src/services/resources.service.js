@@ -1,4 +1,5 @@
 // apps/api/src/services/resources.service.js
+import crypto from "crypto";
 import { newId } from "../utils/ids.js";
 import { now } from "../utils/time.js";
 import { deepMerge } from "../utils/merge.js";
@@ -23,25 +24,37 @@ function httpError(statusCode, message, details = null) {
   return e;
 }
 
-function randPassword() {
-  return (
-    Math.random().toString(36).slice(2) +
-    Math.random().toString(36).slice(2) +
-    Date.now().toString(36)
-  ).slice(0, 32);
-}
-
-function defaultHostname({ projectId, name }) {
-  return `${name}.${projectId}.local`
-    .toLowerCase()
-    .replace(/[^a-z0-9.-]/g, "-");
+function requireNonEmptyId(value, field) {
+  const s = String(value ?? "").trim();
+  if (!s) throw httpError(400, `${field} is required`);
+  return s;
 }
 
 function isPlainObject(v) {
   return Boolean(v) && typeof v === "object" && !Array.isArray(v);
 }
 
+// crypto-strong random password (32 chars)
+function randPassword() {
+  return crypto.randomBytes(24).toString("base64url").slice(0, 32);
+}
+
+function defaultHostname({ projectId, name }) {
+  const raw = `${name}.${projectId}.local`.toLowerCase();
+  const cleaned = raw
+    .replace(/[^a-z0-9.-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^\-+|\-+$/g, "");
+  return cleaned.slice(0, 253) || "app.local";
+}
+
 function pickPatch(patch) {
+  if (patch && typeof patch === "object") {
+    // soft guard against pathological payloads
+    const approxSize = JSON.stringify(patch).length;
+    if (approxSize > 256_000) throw httpError(413, "Patch too large");
+  }
+
   const out = {};
 
   if (patch?.name !== undefined) {
@@ -79,12 +92,6 @@ const PROJECT_READ_ROLES = ["project_owner", "project_editor", "project_viewer"]
 const PROJECT_WRITE_ROLES = ["project_owner", "project_editor"];
 const PROJECT_ADMIN_ROLES = ["project_owner"];
 
-function requireNonEmptyId(value, field) {
-  const s = String(value ?? "").trim();
-  if (!s) throw httpError(400, `${field} is required`);
-  return s;
-}
-
 async function getProjectOr404(db, projectId) {
   const pid = requireNonEmptyId(projectId, "projectId");
   const p = await db.collection("projects").findOne({ projectId: pid });
@@ -104,8 +111,8 @@ async function requireProjectRead(db, projectId, actor) {
     subjectId: String(actor.userId),
     $or: [
       { scopeType: "project", scopeId: pid, roleId: { $in: PROJECT_READ_ROLES } },
-      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_READ_ROLES } }
-    ]
+      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_READ_ROLES } },
+    ],
   });
 
   if (!b) throw httpError(403, "Forbidden", { projectId: pid });
@@ -124,11 +131,16 @@ async function requireProjectWrite(db, projectId, actor) {
     subjectId: String(actor.userId),
     $or: [
       { scopeType: "project", scopeId: pid, roleId: { $in: PROJECT_WRITE_ROLES } },
-      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_WRITE_ROLES } }
-    ]
+      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_WRITE_ROLES } },
+    ],
   });
 
-  if (!b) throw httpError(403, "Forbidden", { projectId: pid, required: "project_owner|project_editor|team_owner" });
+  if (!b) {
+    throw httpError(403, "Forbidden", {
+      projectId: pid,
+      required: "project_owner|project_editor|team_owner",
+    });
+  }
   return p;
 }
 
@@ -144,11 +156,16 @@ async function requireProjectAdmin(db, projectId, actor) {
     subjectId: String(actor.userId),
     $or: [
       { scopeType: "project", scopeId: pid, roleId: { $in: PROJECT_ADMIN_ROLES } },
-      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_WRITE_ROLES } }
-    ]
+      { scopeType: "team", scopeId: String(p.teamId), roleId: { $in: TEAM_WRITE_ROLES } },
+    ],
   });
 
-  if (!b) throw httpError(403, "Forbidden", { projectId: pid, required: "project_owner|team_owner" });
+  if (!b) {
+    throw httpError(403, "Forbidden", {
+      projectId: pid,
+      required: "project_owner|team_owner",
+    });
+  }
   return p;
 }
 
@@ -173,7 +190,7 @@ export function resourcesService(db) {
       attempts: 0,
       lastError: null,
       updatedAt: now(),
-      createdAt: now()
+      createdAt: now(),
     });
   }
 
@@ -183,7 +200,7 @@ export function resourcesService(db) {
       state: "creating",
       message: msg,
       details: null,
-      lastUpdatedAt: now()
+      lastUpdatedAt: now(),
     });
   }
 
@@ -195,7 +212,7 @@ export function resourcesService(db) {
       throw httpError(400, "Spec validation failed", {
         kind,
         schemaRef: v.schemaRef,
-        errors: v.errors
+        errors: v.errors,
       });
     }
   }
@@ -217,7 +234,7 @@ export function resourcesService(db) {
       ciphertext: enc.ciphertext,
       encryptionMeta: enc.encryptionMeta,
       createdBy,
-      createdAt: now()
+      createdAt: now(),
     });
 
     return { ...spec, passwordSecretRef: secretId };
@@ -245,7 +262,7 @@ export function resourcesService(db) {
         pathPrefix: null,
         targetResourceId: rootResource.resourceId,
         targetPort: port,
-        protocol: "http"
+        protocol: "http",
       },
       desiredState: "active",
       labels: { "sensual.platformManaged": "true" },
@@ -254,7 +271,7 @@ export function resourcesService(db) {
       createdAt,
       updatedAt: createdAt,
       parentResourceId: rootResource.resourceId,
-      rootResourceId: rootResource.resourceId
+      rootResourceId: rootResource.resourceId,
     };
 
     await validateKindSpecOr400("http_route", routeDoc.spec);
@@ -270,12 +287,15 @@ export function resourcesService(db) {
     async createFromCatalog({ projectId, catalogId, name, overrides, actor }) {
       if (!actor?.userId) throw httpError(401, "Unauthorized");
 
-      await requireProjectWrite(db, projectId, actor);
+      const pid = requireNonEmptyId(projectId, "projectId");
+      const cid = requireNonEmptyId(catalogId, "catalogId");
+      const nm = requireNonEmptyId(name, "name");
 
-      const item = await catalog.getByCatalogId(catalogId);
-      if (!item) throw httpError(404, `Unknown catalogId: ${catalogId}`);
+      await requireProjectWrite(db, pid, actor);
 
-      if (!name || !String(name).trim()) throw httpError(400, "name is required");
+      const item = await catalog.getByCatalogId(cid);
+      if (!item) throw httpError(404, `Unknown catalogId: ${cid}`);
+
       if (overrides && !isPlainObject(overrides)) throw httpError(400, "overrides must be an object");
 
       const rootResourceId = newId("res");
@@ -286,18 +306,17 @@ export function resourcesService(db) {
         spec = await maybeCreatePostgresPasswordSecret({
           createdBy: actor.userId,
           resourceId: rootResourceId,
-          spec
+          spec,
         });
       }
 
-      // Validate final spec against kind schema.
       await validateKindSpecOr400(item.kind, spec);
 
       const rootDoc = {
         resourceId: rootResourceId,
-        projectId: String(projectId),
+        projectId: String(pid),
         kind: item.kind,
-        name: String(name).trim(),
+        name: String(nm).trim(),
         spec,
         desiredState: "active",
         labels: {},
@@ -306,51 +325,55 @@ export function resourcesService(db) {
         createdAt,
         updatedAt: createdAt,
         parentResourceId: null,
-        rootResourceId: rootResourceId
+        rootResourceId: rootResourceId,
       };
 
       await resources.insert(rootDoc);
       await initStatus(rootResourceId);
       await enqueueResourceChanged(rootResourceId, "create", actor.userId);
 
-      const childRoute = await maybeCreatePublicRouteChild({ createdBy: actor.userId, rootResource: rootDoc });
+      const childRoute = await maybeCreatePublicRouteChild({
+        createdBy: actor.userId,
+        rootResource: rootDoc,
+      });
+
       return { resource: rootDoc, createdChildren: childRoute ? [childRoute] : [] };
     },
 
     async get(resourceId, actor) {
       if (!actor?.userId) throw httpError(401, "Unauthorized");
 
-      const r = await resources.getByResourceId(resourceId);
-      if (!r) throw httpError(404, `Resource not found: ${resourceId}`);
+      const rid = requireNonEmptyId(resourceId, "resourceId");
+      const r = await resources.getByResourceId(rid);
+      if (!r) throw httpError(404, `Resource not found: ${rid}`);
 
       await requireProjectRead(db, r.projectId, actor);
 
-      const s = await status.get(resourceId);
+      const s = await status.get(rid);
       return { resource: r, status: s };
     },
 
     async list({ projectId, kind, actor }) {
       if (!actor?.userId) throw httpError(401, "Unauthorized");
 
-      if (!projectId && !actor.isSuperAdmin) {
-        throw httpError(400, "projectId is required");
-      }
+      if (!projectId && !actor.isSuperAdmin) throw httpError(400, "projectId is required");
 
       if (projectId) await requireProjectRead(db, projectId, actor);
 
       return {
         resources: await resources.list({
           projectId: projectId ? String(projectId) : null,
-          kind: kind ? String(kind) : null
-        })
+          kind: kind ? String(kind) : null,
+        }),
       };
     },
 
     async patch(resourceId, patch, actor) {
       if (!actor?.userId) throw httpError(401, "Unauthorized");
 
-      const existing = await resources.getByResourceId(resourceId);
-      if (!existing) throw httpError(404, `Resource not found: ${resourceId}`);
+      const rid = requireNonEmptyId(resourceId, "resourceId");
+      const existing = await resources.getByResourceId(rid);
+      if (!existing) throw httpError(404, `Resource not found: ${rid}`);
 
       await requireProjectWrite(db, existing.projectId, actor);
 
@@ -361,38 +384,39 @@ export function resourcesService(db) {
         await validateKindSpecOr400(existing.kind, safe.spec);
       }
 
-      const updated = await resources.update(resourceId, {
+      const updated = await resources.update(rid, {
         ...safe,
         generation: (existing.generation || 0) + 1,
-        updatedAt: now()
+        updatedAt: now(),
       });
 
-      await enqueueResourceChanged(resourceId, "update", actor.userId);
+      await enqueueResourceChanged(rid, "update", actor.userId);
       return { resource: updated };
     },
 
     async remove(resourceId, actor) {
       if (!actor?.userId) throw httpError(401, "Unauthorized");
 
-      const existing = await resources.getByResourceId(resourceId);
-      if (!existing) throw httpError(404, `Resource not found: ${resourceId}`);
+      const rid = requireNonEmptyId(resourceId, "resourceId");
+      const existing = await resources.getByResourceId(rid);
+      if (!existing) throw httpError(404, `Resource not found: ${rid}`);
 
       await requireProjectAdmin(db, existing.projectId, actor);
 
-      const updated = await resources.update(resourceId, {
+      const updated = await resources.update(rid, {
         desiredState: "deleted",
         generation: (existing.generation || 0) + 1,
-        updatedAt: now()
+        updatedAt: now(),
       });
 
-      await status.upsert(resourceId, {
+      await status.upsert(rid, {
         state: "deleting",
         message: "Deletion requested",
-        lastUpdatedAt: now()
+        lastUpdatedAt: now(),
       });
 
-      await enqueueResourceChanged(resourceId, "delete", actor.userId);
+      await enqueueResourceChanged(rid, "delete", actor.userId);
       return { resource: updated };
-    }
+    },
   };
 }

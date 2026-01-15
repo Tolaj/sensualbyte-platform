@@ -15,7 +15,7 @@ async function upsertBy(db, collection, filter, doc) {
         filter,
         {
             $setOnInsert: { createdAt: now },
-            $set: { ...rest, updatedAt: now }
+            $set: { ...rest, updatedAt: now },
         },
         { upsert: true }
     );
@@ -23,6 +23,16 @@ async function upsertBy(db, collection, filter, doc) {
 
 /**
  * IAM roles: platform policy source of truth
+ *
+ * Updated to include the permissions introduced by the new IAM enforcement:
+ * - identity.users.*, identity.teams.*
+ * - iam.roles.*, iam.bindings.*
+ * - project.list, project.create (and project.* for owners)
+ * - resource.list (route now expects this)
+ * - bucket.objects.* (data-plane)
+ * - secret.ssh_key.download (one-time key download)
+ *
+ * NOTE: We keep backward-compat with existing role expectations.
  */
 async function seedIamRoles(db) {
     const roles = [
@@ -43,7 +53,9 @@ async function seedIamRoles(db) {
             name: "User Owner",
             description: "Full control of own user scope.",
             scopeType: "user",
-            permissions: ["user.*"],
+            permissions: [
+                "user.*"
+            ],
             inherits: null,
             system: true
         },
@@ -54,7 +66,28 @@ async function seedIamRoles(db) {
             name: "Team Owner",
             description: "Full control of team, membership, and team projects.",
             scopeType: "team",
-            permissions: ["team.*", "project.*", "iam.*"],
+            permissions: [
+                // team
+                "team.*",
+                "team.members.read",
+                "team.members.write",
+
+                // projects in team
+                "project.list",
+                "project.create",
+                "project.read",
+                "project.*",
+
+                // IAM bindings within team/project scopes
+                "iam.bindings.read",
+                "iam.bindings.write",
+                "iam.*",
+
+                // resources/secrets/buckets under projects they control
+                "resource.*",
+                "secret.*",
+                "bucket.*"
+            ],
             inherits: null,
             system: true
         },
@@ -63,7 +96,20 @@ async function seedIamRoles(db) {
             name: "Team Member",
             description: "Basic team access.",
             scopeType: "team",
-            permissions: ["team.read", "project.create", "project.read"],
+            permissions: [
+                "team.read",
+                "team.members.read",
+
+                "project.list",
+                "project.create",
+                "project.read",
+
+                // allow working inside projects via project bindings (project role still controls)
+                // team_member does NOT grant resource write directly unless service allows via team_owner only.
+                // Keep conservative:
+                "resource.list",
+                "resource.read"
+            ],
             inherits: null,
             system: true
         },
@@ -72,7 +118,14 @@ async function seedIamRoles(db) {
             name: "Team Viewer",
             description: "Read-only team access.",
             scopeType: "team",
-            permissions: ["team.read", "project.read"],
+            permissions: [
+                "team.read",
+                "team.members.read",
+                "project.list",
+                "project.read",
+                "resource.list",
+                "resource.read"
+            ],
             inherits: null,
             system: true
         },
@@ -83,7 +136,12 @@ async function seedIamRoles(db) {
             name: "Project Owner",
             description: "Full control of project and its resources.",
             scopeType: "project",
-            permissions: ["project.*", "resource.*", "secret.*"],
+            permissions: [
+                "project.*",
+                "resource.*",
+                "secret.*",
+                "bucket.*"
+            ],
             inherits: null,
             system: true
         },
@@ -92,7 +150,22 @@ async function seedIamRoles(db) {
             name: "Project Editor",
             description: "Can manage resources in project.",
             scopeType: "project",
-            permissions: ["project.read", "resource.create", "resource.read", "resource.update", "secret.read"],
+            permissions: [
+                "project.read",
+
+                "resource.create",
+                "resource.list",
+                "resource.read",
+                "resource.update",
+
+                // secrets: meta read + value read (your controller separates)
+                "secret.read",
+
+                // bucket ops are effectively “resource-backed”; editor should have upload/download
+                "bucket.objects.list",
+                "bucket.objects.upload",
+                "bucket.objects.download"
+            ],
             inherits: null,
             system: true
         },
@@ -101,7 +174,14 @@ async function seedIamRoles(db) {
             name: "Project Viewer",
             description: "Read-only access to project/resources.",
             scopeType: "project",
-            permissions: ["project.read", "resource.read"],
+            permissions: [
+                "project.read",
+                "resource.list",
+                "resource.read",
+                "secret.read",
+                "bucket.objects.list",
+                "bucket.objects.download"
+            ],
             inherits: null,
             system: true
         }
@@ -111,6 +191,7 @@ async function seedIamRoles(db) {
         await upsertBy(db, "iam_roles", { roleId: r.roleId }, r);
     }
 }
+
 
 /**
  * Super admin user + global binding
@@ -125,7 +206,7 @@ async function seedSuperAdmin(db) {
         username: "superadmin",
         globalRole: "super_admin",
         active: true,
-        lastLoginAt: null
+        lastLoginAt: null,
     });
 
     await upsertBy(
@@ -135,7 +216,7 @@ async function seedSuperAdmin(db) {
             scopeType: "global",
             scopeId: "global",
             subjectType: "user",
-            subjectId: "user_superadmin"
+            subjectId: "user_superadmin",
         },
         {
             bindingId: "bind_superadmin_global",
@@ -144,7 +225,7 @@ async function seedSuperAdmin(db) {
             subjectType: "user",
             subjectId: "user_superadmin",
             roleId: "super_admin",
-            createdBy: "user_superadmin"
+            createdBy: "user_superadmin",
         }
     );
 }
@@ -154,7 +235,7 @@ async function seedSecretStores(db) {
         storeId: "store_local",
         type: "local_encrypted_db",
         config: { keyId: "master" },
-        active: true
+        active: true,
     });
 }
 
@@ -166,7 +247,7 @@ async function seedCatalogCategories(db) {
         { categoryId: "networking", name: "Networking", description: "Routing and traffic management", order: 40 },
         { categoryId: "identity", name: "Identity", description: "Users, roles, tokens, secrets", order: 50 },
         { categoryId: "observability", name: "Observability", description: "Logs and metrics", order: 60 },
-        { categoryId: "management", name: "Management", description: "Ops tooling and automation", order: 70 }
+        { categoryId: "management", name: "Management", description: "Ops tooling and automation", order: 70 },
     ];
 
     for (const c of categories) {
@@ -182,7 +263,7 @@ async function seedResourceKinds(db) {
             description: "Docker container based compute (v1).",
             controller: { name: "compute.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/compute.spec.schema.json",
-            metadata: { implementation: "docker_containers_v1" }
+            metadata: { implementation: "docker_containers_v1" },
         },
         {
             kind: "bucket",
@@ -190,7 +271,7 @@ async function seedResourceKinds(db) {
             description: "S3-like bucket backed by MinIO.",
             controller: { name: "bucket.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/bucket.spec.schema.json",
-            metadata: { implementation: "minio_v1" }
+            metadata: { implementation: "minio_v1" },
         },
         {
             kind: "volume",
@@ -198,7 +279,7 @@ async function seedResourceKinds(db) {
             description: "Persistent volume (Docker volume in v1).",
             controller: { name: "volume.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/volume.spec.schema.json",
-            metadata: { implementation: "docker_volume_v1" }
+            metadata: { implementation: "docker_volume_v1" },
         },
         {
             kind: "http_route",
@@ -206,7 +287,7 @@ async function seedResourceKinds(db) {
             description: "HTTP routing via Nginx gateway.",
             controller: { name: "httpRoute.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/http_route.spec.schema.json",
-            metadata: { implementation: "nginx_gateway_v1" }
+            metadata: { implementation: "nginx_gateway_v1" },
         },
         {
             kind: "postgres",
@@ -214,7 +295,7 @@ async function seedResourceKinds(db) {
             description: "Single-node managed Postgres (container based).",
             controller: { name: "postgres.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/postgres.spec.schema.json",
-            metadata: { implementation: "docker_postgres_v1" }
+            metadata: { implementation: "docker_postgres_v1" },
         },
         {
             kind: "observability",
@@ -222,7 +303,7 @@ async function seedResourceKinds(db) {
             description: "Logs/metrics for targets (redis observed cache).",
             controller: { name: "observability.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/observability.spec.schema.json",
-            metadata: { implementation: "basic_logs_metrics_v1" }
+            metadata: { implementation: "basic_logs_metrics_v1" },
         },
         {
             kind: "mqtt",
@@ -230,9 +311,8 @@ async function seedResourceKinds(db) {
             description: "MQTT endpoint / broker integration.",
             controller: { name: "mqtt.controller", version: "v1" },
             specSchemaRef: "packages/schemas/kinds/mqtt.spec.schema.json",
-            metadata: { implementation: "mqtt_v1" }
-        }
-
+            metadata: { implementation: "mqtt_v1" },
+        },
     ];
 
     for (const k of kinds) {
@@ -256,8 +336,8 @@ async function seedCatalogItems(db) {
                 network: { exposure: "internal", internalPort: 2222 },
                 iaas: { sshUser: "ubuntu", sshKeySecretRef: null },
                 env: {},
-                storage: { mounts: [] }
-            }
+                storage: { mounts: [] },
+            },
         },
         {
             catalogId: "container_service",
@@ -273,8 +353,8 @@ async function seedCatalogItems(db) {
                 network: { exposure: "public", internalPort: 80 },
                 paas: { healthPath: "/", desiredReplicas: 1 },
                 env: {},
-                storage: { mounts: [] }
-            }
+                storage: { mounts: [] },
+            },
         },
         {
             catalogId: "object_bucket",
@@ -282,7 +362,7 @@ async function seedCatalogItems(db) {
             name: "Object Bucket",
             description: "S3-like object bucket backed by MinIO.",
             kind: "bucket",
-            defaults: { bucketName: null, versioning: false, publicRead: false, quotaMb: null }
+            defaults: { bucketName: null, versioning: false, publicRead: false, quotaMb: null },
         },
         {
             catalogId: "persistent_volume",
@@ -290,7 +370,7 @@ async function seedCatalogItems(db) {
             name: "Persistent Volume",
             description: "Persistent volume (Docker volume in v1).",
             kind: "volume",
-            defaults: { name: null, sizeMb: null }
+            defaults: { name: null, sizeMb: null },
         },
         {
             catalogId: "http_route",
@@ -298,7 +378,7 @@ async function seedCatalogItems(db) {
             name: "HTTP Route",
             description: "Route hostname/path to a compute target via Nginx.",
             kind: "http_route",
-            defaults: { hostname: null, pathPrefix: null, targetResourceId: null, targetPort: null, protocol: "http" }
+            defaults: { hostname: null, pathPrefix: null, targetResourceId: null, targetPort: null, protocol: "http" },
         },
         {
             catalogId: "managed_postgres",
@@ -312,8 +392,8 @@ async function seedCatalogItems(db) {
                 username: "app",
                 passwordSecretRef: null,
                 storageMb: 10240,
-                backups: { enabled: true, retentionDays: 7 }
-            }
+                backups: { enabled: true, retentionDays: 7 },
+            },
         },
         {
             catalogId: "logs_metrics",
@@ -321,8 +401,8 @@ async function seedCatalogItems(db) {
             name: "Logs + Metrics",
             description: "Enable basic logs and metrics collection.",
             kind: "observability",
-            defaults: { logs: { enabled: true }, metrics: { enabled: true }, targets: [] }
-        }
+            defaults: { logs: { enabled: true }, metrics: { enabled: true }, targets: [] },
+        },
     ];
 
     for (const it of items) {

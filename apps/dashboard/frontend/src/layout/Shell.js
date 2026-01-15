@@ -5,6 +5,7 @@ import { getSettings, setSettings, resetSettings } from "../utils/storage";
 import Modal from "../components/Modal";
 import Button from "../components/Button";
 import ToastHost, { useToasts } from "../components/Toast";
+import { api } from "../api";
 
 function NavItem({ href, label, active }) {
     return (
@@ -15,10 +16,11 @@ function NavItem({ href, label, active }) {
     );
 }
 
-export default function Shell({ route, children }) {
+export default function Shell({ route, children, me, authed }) {
     const { toasts, pushToast, removeToast } = useToasts();
     const [settingsOpen, setSettingsOpen] = React.useState(false);
     const [settings, setSettingsState] = React.useState(() => getSettings());
+    const authed = !!String(settings.token || "").trim();
 
     React.useEffect(() => {
         window.__sbToast = pushToast;
@@ -70,9 +72,36 @@ export default function Shell({ route, children }) {
                         <div className="muted small">User</div>
                         <div className="sb-mono">{settings.userId}</div>
                     </div>
+                    <div className="sb-mono">
+                        {me?.userId || settings.userId}
+                        {me?.email ? ` · ${me.email}` : ""}
+                    </div>
+
+
 
                     <div className="sb-actions">
                         <Button onClick={() => setSettingsOpen(true)} variant="secondary">Settings</Button>
+                        {authed ? (
+                            <Button
+                                variant="danger"
+                                onClick={() => {
+                                    api.authLogout();
+                                    pushToast({ type: "ok", title: "Signed out", message: "Token cleared." });
+                                    window.location.hash = "#/login";
+                                    window.location.reload();
+                                }}
+                            >
+                                Logout
+                            </Button>
+                        ) : (
+                            <Button
+                                onClick={() => {
+                                    window.location.hash = "#/login";
+                                }}
+                            >
+                                Login
+                            </Button>
+                        )}
                     </div>
 
                     <div className="sb-hint">

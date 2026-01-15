@@ -1,68 +1,74 @@
-// src/App.js
+// src/app.js
 import React from "react";
-import Shell from "./layout/Shell";
+import { Routes, Route, Navigate } from "react-router-dom";
 
-import Home from "./pages/Home";
-import Identity from "./pages/Identity";
-import Projects from "./pages/Projects";
-import Resources from "./pages/Resources";
-import Secrets from "./pages/Secrets";
-import Explorer from "./pages/Explorer";
+import PublicLayout from "./layout/PublicLayout";
+import AppLayout from "./layout/AppLayout";
+import RequireAuth from "./auth/RequireAuth";
+import RequireWorkspace from "./workspace/RequireWorkspace";
 
-import ComputeList from "./pages/ComputeList";
-import ComputeDetail from "./pages/ComputeDetail";
-import BucketsList from "./pages/BucketsList";
-import BucketDetail from "./pages/BucketDetail";
+import LoginPage from "./pages/auth/LoginPage";
+import SignupPage from "./pages/auth/SignupPage";
+import OverviewPage from "./pages/OverviewPage";
 
-function useHashRoute() {
-    const [route, setRoute] = React.useState(() => window.location.hash.replace(/^#/, "") || "/");
-    React.useEffect(() => {
-        const onHash = () => setRoute(window.location.hash.replace(/^#/, "") || "/");
-        window.addEventListener("hashchange", onHash);
-        return () => window.removeEventListener("hashchange", onHash);
-    }, []);
-    return route;
-}
+import ComputeListPage from "./pages/compute/ComputeListPage";
+import ComputeDetailPage from "./pages/compute/ComputeDetailPage";
+import BucketsListPage from "./pages/buckets/BucketsListPage";
+import BucketDetailPage from "./pages/buckets/BucketDetailPage";
+import WorkspaceBootstrap from "./workspace/WorkspaceBootstrap";
 
-// tiny router: supports patterns like "/compute/:resourceId"
-function matchRoute(route, pattern) {
-    const clean = String(route || "/").split("?")[0];
-    const rSeg = clean.split("/").filter(Boolean);
-    const pSeg = pattern.split("/").filter(Boolean);
-    if (rSeg.length !== pSeg.length) return null;
-    const params = {};
-    for (let i = 0; i < pSeg.length; i++) {
-        const p = pSeg[i];
-        const r = rSeg[i];
-        if (p.startsWith(":")) params[p.slice(1)] = decodeURIComponent(r);
-        else if (p !== r) return null;
-    }
-    return params;
-}
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import IamRolesPage from "./pages/admin/IamRolesPage";
+import IamBindingsPage from "./pages/admin/IamBindingsPage";
+import SecretsPage from "./pages/secrets/SecretsPage";
+import CatalogPage from "./pages/catalog/CatalogPage";
+import ObservabilityPage from "./pages/observability/ObservabilityPage";
+
+
+import NotFound from "./pages/NotFound";
 
 export default function App() {
-    const route = useHashRoute();
+    return (
+        <Routes>
+            <Route element={<PublicLayout />}>
+                <Route path="/" element={<Navigate to="/app/overview" replace />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+            </Route>
 
-    const navigate = (to) => {
-        const next = to.startsWith("#") ? to : `#${to.startsWith("/") ? to : `/${to}`}`;
-        window.location.hash = next;
-    };
+            <Route
+                path="/app"
+                element={
+                    <RequireAuth>
+                        <AppLayout />
+                    </RequireAuth>
+                }
+            >
+                <Route index element={<Navigate to="overview" replace />} />
 
-    let page = <Home />;
+                {/* Workspace bootstrap is allowed even when no project is selected */}
+                <Route path="workspace" element={<WorkspaceBootstrap />} />
 
-    // detail routes first
-    const computeParams = matchRoute(route, "/compute/:resourceId");
-    const bucketParams = matchRoute(route, "/buckets/:resourceId");
+                {/* Everything else requires teamId + projectId */}
+                <Route element={<RequireWorkspace />}>
+                    <Route path="overview" element={<OverviewPage />} />
+                    <Route path="compute" element={<ComputeListPage />} />
+                    <Route path="compute/:resourceId" element={<ComputeDetailPage />} />
+                    <Route path="buckets" element={<BucketsListPage />} />
+                    <Route path="buckets/:resourceId" element={<BucketDetailPage />} />
 
-    if (computeParams) page = <ComputeDetail params={computeParams} navigate={navigate} />;
-    else if (bucketParams) page = <BucketDetail params={bucketParams} navigate={navigate} />;
-    else if (route === "/compute") page = <ComputeList navigate={navigate} />;
-    else if (route === "/buckets") page = <BucketsList navigate={navigate} />;
-    else if (route.startsWith("/identity")) page = <Identity />;
-    else if (route.startsWith("/projects")) page = <Projects />;
-    else if (route.startsWith("/resources")) page = <Resources />;
-    else if (route.startsWith("/secrets")) page = <Secrets />;
-    else if (route.startsWith("/explorer")) page = <Explorer />;
+                    <Route path="secrets" element={<SecretsPage />} />
+                    <Route path="catalog" element={<CatalogPage />} />
+                    <Route path="observability" element={<ObservabilityPage />} />
 
-    return <Shell route={route}>{page}</Shell>;
+                    <Route path="admin/users" element={<AdminUsersPage />} />
+                    <Route path="admin/iam/roles" element={<IamRolesPage />} />
+                    <Route path="admin/iam/bindings" element={<IamBindingsPage />} />
+
+                </Route>
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+        </Routes>
+    );
 }
